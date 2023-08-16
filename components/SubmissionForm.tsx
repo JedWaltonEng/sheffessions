@@ -22,24 +22,23 @@ class SubmissionForm extends React.Component<{}, State> {
   //   alert('Your Sheffession has been submitted...');
   //   event.preventDefault();
   // }
+
+  webhookURL = 'https://discord.com/api/webhooks/1141479151178629291/1lFcn3RBk_HizyPNkTXBc95kScxfNoroK4-vzi7xzJZhG5IUuxOOucW2fut7qCQ9qNWO';
+
   async handleSubmit(event: FormEvent) {
     event.preventDefault();
 
     try {
-      const response = await fetch('', {
+      const response = await fetch(this.webhookURL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ confession: this.state.value })
+        body: JSON.stringify({ content: this.state.value })
       });
-
-      const data = await response.json();
 
       if (response.ok) {
         alert('Your Sheffession has been submitted :)');
-      } else {
-        alert('Error submitting Sheffession: ' + data.message);
       }
     } catch (error) {
       console.error("There was an error submitting the Sheffession:", error);
