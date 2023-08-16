@@ -18,16 +18,11 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-
 /* Mobile styles */
 .logo {
     width: 80vw;
     max-width: 150px;
     min-width: 80px;
-}
-
-main {
-    padding-top: 2rem; /* adjust this value as per your needs */
 }
 
 /* Desktop styles */
@@ -36,9 +31,5 @@ main {
         width: 20vw;
         max-width: 300px;
         min-width: 150px;
-    }
-
-    main {
-        padding-top: 12rem; /* adjust this value as per your needs or keep the original padding */
     }
 }
