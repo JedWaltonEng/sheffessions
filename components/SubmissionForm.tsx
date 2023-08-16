@@ -18,7 +18,8 @@ class SubmissionForm extends React.Component<{}, State> {
   }
 
   handleSubmit(event: FormEvent) {
-    alert('Your Sheffession has been submitted :)' + this.state.value);
+    // alert('Your Sheffession has been submitted :) ' + this.state.value);
+    alert('Your Sheffession has been submitted...');
     event.preventDefault();
   }
 
