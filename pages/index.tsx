@@ -10,6 +10,7 @@ export default function Home() {
           />
           <p className="mb-4 text-xl font-bold">Sheffessions_</p>
           <textarea
+            color="black"
             rows={5}
             placeholder="Type your anonymous confession here..."
             className="w-11/12 h-48 p-6 border-2 rounded-md text-xl mb-4 md:w-3/4 lg:w-2/3"
