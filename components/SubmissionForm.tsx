@@ -1,4 +1,5 @@
 import React, { ChangeEvent, FormEvent } from 'react';
+import Cookies from 'js-cookie';
 
 interface State {
   value: string;
@@ -28,6 +29,12 @@ class SubmissionForm extends React.Component<{}, State> {
   async handleSubmit(event: FormEvent) {
     event.preventDefault();
 
+    const confessionCount = Cookies.get('confessionCount');
+    if (confessionCount && parseInt(confessionCount) >= 10) {
+      alert('You may only submit 10 confessions daily.');
+      return;
+    }
+
     try {
       const response = await fetch(this.webhookURL, {
         method: 'POST',
@@ -39,6 +46,10 @@ class SubmissionForm extends React.Component<{}, State> {
 
       if (response.ok) {
         alert('Your Sheffession has been submitted :)');
+
+        // Update the cookie with the new count
+        const newCount = confessionCount ? parseInt(confessionCount) + 1 : 1;
+        Cookies.set('confessionCount', newCount.toString(), { expires: 1 });
       }
     } catch (error) {
       console.error("There was an error submitting the Sheffession:", error);
