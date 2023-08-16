@@ -17,10 +17,34 @@ class SubmissionForm extends React.Component<{}, State> {
     this.setState({ value: event.target.value });
   }
 
-  handleSubmit(event: FormEvent) {
-    // alert('Your Sheffession has been submitted :) ' + this.state.value);
-    alert('Your Sheffession has been submitted...');
+  // handleSubmit(event: FormEvent) {
+  //   // alert('Your Sheffession has been submitted :) ' + this.state.value);
+  //   alert('Your Sheffession has been submitted...');
+  //   event.preventDefault();
+  // }
+  async handleSubmit(event: FormEvent) {
     event.preventDefault();
+
+    try {
+      const response = await fetch('', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ confession: this.state.value })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Your Sheffession has been submitted :)');
+      } else {
+        alert('Error submitting Sheffession: ' + data.message);
+      }
+    } catch (error) {
+      console.error("There was an error submitting the Sheffession:", error);
+      alert('There was an error submitting your Sheffession. Please try again later.');
+    }
   }
 
   render() {
