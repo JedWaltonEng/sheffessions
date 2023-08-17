@@ -54,6 +54,7 @@ class SubmissionForm extends React.Component<{}, State> {
 
       if (responseDiscord.ok && responseGoAPI.ok) {
         alert('Your Sheffession has been submitted :)');
+        this.setState({ value: '' });
 
         // Update the cookie with the new count
         const newCount = confessionCount ? parseInt(confessionCount) + 1 : 1;
