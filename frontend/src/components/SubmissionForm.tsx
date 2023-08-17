@@ -23,7 +23,7 @@ class SubmissionForm extends React.Component<{}, State> {
   //   alert('Your Sheffession has been submitted...');
   //   event.preventDefault();
   // }
-
+  apiURL = 'http://localhost:8080/confessions';  // Change to your Go API endpoint if it's different.
   webhookURL = 'https://discord.com/api/webhooks/1141479151178629291/1lFcn3RBk_HizyPNkTXBc95kScxfNoroK4-vzi7xzJZhG5IUuxOOucW2fut7qCQ9qNWO';
 
   async handleSubmit(event: FormEvent) {
@@ -36,7 +36,7 @@ class SubmissionForm extends React.Component<{}, State> {
     }
 
     try {
-      const response = await fetch(this.webhookURL, {
+      const responseDiscord = await fetch(this.webhookURL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -44,12 +44,22 @@ class SubmissionForm extends React.Component<{}, State> {
         body: JSON.stringify({ content: this.state.value })
       });
 
-      if (response.ok) {
+      const responseGoAPI = await fetch(this.apiURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content: this.state.value })
+      });
+
+      if (responseDiscord.ok && responseGoAPI.ok) {
         alert('Your Sheffession has been submitted :)');
 
         // Update the cookie with the new count
         const newCount = confessionCount ? parseInt(confessionCount) + 1 : 1;
         Cookies.set('confessionCount', newCount.toString(), { expires: 1 });
+      } else {
+        throw new Error('Failed to send to Discord API');
       }
     } catch (error) {
       console.error("There was an error submitting the Sheffession:", error);

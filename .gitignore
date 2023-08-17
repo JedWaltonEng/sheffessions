@@ -128,3 +128,80 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+
+# Python
+*.pyc
+*.pyo
+*.egg-info/
+__pycache__/
+*.pyd
+*.swp
+*.swo
+*.swn
+*.pdb
+*.prof
+*.log
+
+# Virtual Environments
+venv/
+*.venv
+env/
+ENV/
+
+
+# Go
+*.exe
+*.test
+*.out
+/go/bin/
+/go/pkg/
+*.a
+*.o
+
+
+# JetBrains IDEs (e.g., IntelliJ, PyCharm, GoLand, WebStorm)
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+.metadata/
+.bin/
+
+# Xcode (for those who may use it for some reason)
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# Visual Studio
+*.sln
+*.suo
+*.user
+*.userosscache
+*.dbmdl
+*.jfm
+*.vs/
+*.vshost.*
+eprj/
+*.csproj
+*.vbproj
+*.vcxproj
+*.vcxproj.filters
+
+# NetBeans
+nbproject/
+build/
+
+# Atom
+.atom/
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
