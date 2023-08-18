@@ -28,6 +28,10 @@ jobs:
       working-directory: ./backend/sheffessions_api
       run: go test -v .
 
+    - name: Install App Engine Go component
+      run: |
+        sudo apt-get install google-cloud-sdk-app-engine-go || echo "Failed to install app-engine-go, proceeding anyway."
+
     - name: Authenticate with GCP
       run: echo "$GOOGLE_APPLICATION_CREDENTIALS" | gcloud auth activate-service-account --key-file=-
       env:
