@@ -23,7 +23,12 @@ class SubmissionForm extends React.Component<{}, State> {
   //   alert('Your Sheffession has been submitted...');
   //   event.preventDefault();
   // }
+
+  // env variables for dev, staging and prod
   apiURL = 'http://localhost:8080/confessions';  // Change to your Go API endpoint if it's different.
+  // apiURL2 = 'https://sheffessions-api.onrender.com/confessions';  // Change to your Go API endpoint if it's different.
+
+  // env variables for dev, staging and prod
   webhookURL = 'https://discord.com/api/webhooks/1141479151178629291/1lFcn3RBk_HizyPNkTXBc95kScxfNoroK4-vzi7xzJZhG5IUuxOOucW2fut7qCQ9qNWO';
 
   async handleSubmit(event: FormEvent) {
