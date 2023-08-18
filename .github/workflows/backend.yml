@@ -24,12 +24,6 @@ jobs:
       working-directory: ./backend/sheffessions_api
       run: go get -v ./...
 
-    - name: Build for AWS Lambda
-      working-directory: ./backend/sheffessions_api
-      run: |
-        GOOS=linux GOARCH=amd64 go build -o main .
-        zip deployment.zip main
-
     - name: Test
       working-directory: ./backend/sheffessions_api
       run: go test -v .

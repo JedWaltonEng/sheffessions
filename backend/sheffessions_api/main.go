@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 )
 
 func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
@@ -54,8 +55,14 @@ func enableCors(w *http.ResponseWriter) {
 func main() {
 	http.HandleFunc("/confessions", loggingMiddleware(handleConfessions))
 
-	log.Println("Server starting on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("Defaulting to port %s", port)
+	}
+	log.Printf("Server starting on :%s", port)
+
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
