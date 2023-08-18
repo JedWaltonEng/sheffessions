@@ -37,8 +37,6 @@ jobs:
       env:
         GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
-    - name: Set GCP Project
-      run: gcloud config set project sheffessions
 
     - name: Deploy to App Engine
       run: |
