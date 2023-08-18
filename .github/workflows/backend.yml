@@ -28,22 +28,16 @@ jobs:
       working-directory: ./backend/sheffessions_api
       run: go test -v .
 
-    # - name: Deploy to App Engine
-    #   id: deploy
-    #   uses: google-github-actions/deploy-appengine@v0.2.0
-    #   with:
-    #     deliverables: app.yaml
-    #     version: v1
-    #     project_id: sheffessions
-    #     credentials: ${{ secrets.GCP_CREDENTIALS }}
+    - name: Authenticate with GCP
+      run: echo "$GOOGLE_APPLICATION_CREDENTIALS" | gcloud auth activate-service-account --key-file=-
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
-    - name: Install App Engine Go component
-      run: |
-        sudo apt-get install google-cloud-sdk-app-engine-go || echo "Failed to install app-engine-go, proceeding anyway."
+    - name: Set GCP Project
+      run: gcloud config set project sheffessions
 
     - name: Deploy to App Engine
       run: |
         cd ./backend/sheffessions_api
         gcloud app deploy --quiet app.yaml --project sheffessions --version v1 --promote
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
