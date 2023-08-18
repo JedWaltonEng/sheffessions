@@ -20,6 +20,10 @@ jobs:
       with:
         go-version: '1.21'
 
+    - name: Fetch dependencies
+      working-directory: ./backend/sheffessions_api
+      run: go get -v ./...
+
     - name: Build
       working-directory: ./backend/sheffessions_api
       run: go build -v .
