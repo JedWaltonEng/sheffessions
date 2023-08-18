@@ -28,15 +28,26 @@ jobs:
       working-directory: ./backend/sheffessions_api
       run: go test -v .
 
-    - id: auth
-      name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v0.4.0
+    # - id: auth
+    #   name: Authenticate to Google Cloud
+    #   uses: google-github-actions/auth@v0.4.0
+    #   with:
+    #     credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+    #
+    # # - name: Change to API directory
+    # #   run: cd backend/sheffessions_api
+    #
+    # - name: Deploy to App Engine
+    #   run: gcloud app deploy --quiet --format json app.yaml --project sheffessions --promote
+    #   working-directory: ./backend/sheffessions_api
+    #
+    - name: Setup gcloud CLI
+      uses: google-github-actions/setup-gcloud@master
       with:
         credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-    # - name: Change to API directory
-    #   run: cd backend/sheffessions_api
+    # Optional: Build/compile step for your application, if necessary
 
     - name: Deploy to App Engine
-      run: gcloud app deploy --quiet --format json app.yaml --project sheffessions --promote
-      working-directory: ./backend/sheffessions_api
+      run: |
+        gcloud app deploy ./backend/sheffessions_api/app.yaml --project sheffessions --quiet
