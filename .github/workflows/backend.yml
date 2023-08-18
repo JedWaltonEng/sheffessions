@@ -28,11 +28,14 @@ jobs:
       working-directory: ./backend/sheffessions_api
       run: go test -v .
 
+    - name: Change working directory
+      run: |
+        cd ./backend/sheffessions_api
+
     - name: Deploy to App Engine
       id: deploy
       uses: google-github-actions/deploy-appengine@v0.2.0
       with:
-        working-directory: ./backend/sheffessions_api
         deliverables: app.yaml
         version: v1
         project_id: sheffessions
