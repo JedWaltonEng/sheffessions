@@ -34,6 +34,9 @@ jobs:
       with:
         credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-    # Deploy to Google App Engine.
-    - name: Deploy to GAE
+
+    - name: Change to API directory
+      run: cd backend/sheffessions_api
+
+    - name: Deploy to App Engine
       run: gcloud app deploy --quiet --format json app.yaml --project sheffessions --promote
