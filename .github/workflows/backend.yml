@@ -34,8 +34,14 @@ jobs:
       working-directory: ./backend/sheffessions_api
       run: go test -v .
 
-    - name: Deploy to Google App Engine
-      uses: google-github-actions/deploy-appengine@main
+    - id: auth
+      name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v0.4.0
       with:
-        credentials: ${{ secrets.GCP_CREDENTIALS }}
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+    - name: Deploy to Google App Engine
+      uses: google-github-actions/deploy-appengine@v1
+      with:
         project_id: sheffessions
+        working_directory: ./backend/sheffessions_api
