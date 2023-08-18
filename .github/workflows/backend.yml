@@ -31,15 +31,8 @@ jobs:
     - name: Install App Engine Go component
       run: |
         sudo apt-get install google-cloud-sdk-app-engine-go || echo "Failed to install app-engine-go, proceeding anyway."
-
-    - name: Authenticate with GCP
-      run: echo "$GOOGLE_APPLICATION_CREDENTIALS" | gcloud auth activate-service-account --key-file=-
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-
-
-    - name: Deploy to App Engine
-      run: |
+        echo "$GOOGLE_APPLICATION_CREDENTIALS" | gcloud auth activate-service-account --key-file=-
         cd ./backend/sheffessions_api
         gcloud app deploy --quiet app.yaml --project sheffessions --version v1 --promote
-
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
