@@ -28,8 +28,34 @@ jobs:
       working-directory: ./backend/sheffessions_api
       run: go test -v .
 
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18' # You can set this to your project's Node.js version
+
+    - name: Cache node modules
+      uses: actions/cache@v3
+      with:
+        path: ~/.pnpm-cache
+        key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.OS }}-pnpm-
+
+    - name: Install dependencies
+      working-directory: ./frontend/sheffessions
+      run: pnpm install
+    
+    - name: Run frontend tests
+      working-directory: ./frontend/sheffessions
+      run: pnpm test
+        
   deploy:
-    needs: test-backend
+    needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
