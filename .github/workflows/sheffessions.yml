@@ -34,9 +34,6 @@ jobs:
         export GO111MODULE=on
         go get -v ./...
 
-    - name: debug 
-      run: ls -al ~/go/pkg/mod
-
     - name: Run backend/sheffessions_api unit tests
       working-directory: ./backend/sheffessions_api
       run: go test -v *_unit_test.go
