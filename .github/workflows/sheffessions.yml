@@ -28,12 +28,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    - name: debug 
-      run: ls -al ~/go/pkg/mod
-
     - name: Fetch dependencies
       working-directory: ./backend/sheffessions_api
       run: go get -v ./...
+
+    - name: debug 
+      run: ls -al ~/go/pkg/mod
 
     - name: Run backend/sheffessions_api unit tests
       working-directory: ./backend/sheffessions_api
