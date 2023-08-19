@@ -134,7 +134,7 @@ jobs:
         GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
     - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v0.2.0
+      uses: google-github-actions/setup-gcloud@v2.285.0
       with:
         project_id: sheffessions
         service_account_key: ${{ secrets.GCP_CREDENTIALS }}
@@ -161,6 +161,10 @@ jobs:
 
       - name: Install pnpm
         run: npm install -g pnpm
+
+      - name: Install dependencies
+        working-directory: ./frontend/sheffessions
+        run: pnpm install
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
