@@ -50,7 +50,6 @@ jobs:
       id: deploy
       run: |
         gcloud builds submit backend/sheffessions_api --config backend/sheffessions_api/cloudbuild.yaml
-        false
       continue-on-error: true  # Allow subsequent steps to run even if this step fails
 
     - name: Rollback if deployment failed
