@@ -9,7 +9,7 @@ on:
     branches: [ "dev" ]
 
 jobs:
-  test-backend:
+  unit-test-backend:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -24,11 +24,11 @@ jobs:
       working-directory: ./backend/sheffessions_api
       run: go get -v ./...
 
-    - name: Run tests
+    - name: Run backend/sheffessions_api unit tests
       working-directory: ./backend/sheffessions_api
-      run: go test -v .
+      run: go test -v *_unit_test.go
 
-  test-frontend:
+  unit-test-frontend:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -53,12 +53,17 @@ jobs:
       working-directory: ./frontend/sheffessions
       run: pnpm install
     
-    - name: Run frontend tests
+    - name: Run frontend/sheffessions unit tests
       working-directory: ./frontend/sheffessions
-      run: pnpm test
-        
+      run: pnpm test:unit
+
+  # integration-tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+
+
   deploy:
-    needs: [test-backend, test-frontend]
+    needs: [unit-test-backend, unit-test-frontend]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
