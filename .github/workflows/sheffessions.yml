@@ -94,7 +94,7 @@ jobs:
         run: go test -v *_integration_test.go
 
       - name: Run Frontend Integration Tests
-        working-directory: ./frontend/sheffesions
+        working-directory: frontend/sheffesions
         run: |
           pnpm install
           pnpm test:integration
