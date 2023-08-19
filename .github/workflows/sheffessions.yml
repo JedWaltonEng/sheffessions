@@ -19,6 +19,7 @@ jobs:
       with:
         go-version: '1.21'
         cache: true
+        cache-dependency-path: ./backend/sheffessions_api/go.sum
 
     # # Cache Go modules
     # - name: Cache Go modules
@@ -79,6 +80,7 @@ jobs:
         with:
           go-version: '1.21'
           cache: true
+          cache-dependency-path: ./backend/sheffessions_api/go.sum
 
       # Cache Go modules
       # - name: Cache Go modules
