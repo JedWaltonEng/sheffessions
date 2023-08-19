@@ -46,9 +46,9 @@ func handleConfessions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func warmupHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
+// func warmupHandler(w http.ResponseWriter, r *http.Request) {
+// 	w.WriteHeader(http.StatusOK)
+// }
 
 func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
@@ -58,7 +58,7 @@ func enableCors(w *http.ResponseWriter) {
 
 func main() {
 	http.HandleFunc("/confessions", loggingMiddleware(handleConfessions))
-	http.HandleFunc("/_ah/warmup", loggingMiddleware(warmupHandler)) // For App Engine warmup requests
+	// http.HandleFunc("/_ah/warmup", loggingMiddleware(warmupHandler)) // For App Engine warmup requests
 
 	port := os.Getenv("PORT")
 	if port == "" {
