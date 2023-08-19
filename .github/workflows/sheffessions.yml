@@ -30,7 +30,9 @@ jobs:
 
     - name: Fetch dependencies
       working-directory: ./backend/sheffessions_api
-      run: go get -v ./...
+      run: |
+        export GO111MODULE=on
+        go get -v ./...
 
     - name: debug 
       run: ls -al ~/go/pkg/mod
