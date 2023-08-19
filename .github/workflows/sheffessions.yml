@@ -20,6 +20,15 @@ jobs:
         go-version: '1.21'
         cache-dependency-path: subdir/go.sum
 
+    # Cache Go modules
+    - name: Cache Go modules
+      uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('./backend/sheffessions_api/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
     - name: Fetch dependencies
       working-directory: ./backend/sheffessions_api
       run: go get -v ./...
@@ -64,19 +73,19 @@ jobs:
     needs: [unit-test-backend, unit-test-frontend]
     runs-on: ubuntu-latest
     steps:
-      # - name: Checkout code
-      #   uses: actions/checkout@v3
-      #
-      # - name: Setup Go
-      #   uses: actions/setup-go@v4
-      #   with:
-      #     go-version: '1.21'
-      #     cache-dependency-path: subdir/go.sum
-      #
-      # # This part assumes you might have dependencies for your integration tests.
-      # - name: Fetch dependencies
-      #   working-directory: ./backend/sheffessions_api
-      #   run: go get -v ./...
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache-dependency-path: subdir/go.sum
+
+      # This part assumes you might have dependencies for your integration tests.
+      - name: Fetch dependencies
+        working-directory: ./backend/sheffessions_api
+        run: go get -v ./...
 
       # Build and run the backend (assuming you have a main.go that starts your server)
       - name: Build and Run Backend
