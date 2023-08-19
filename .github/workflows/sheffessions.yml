@@ -81,7 +81,7 @@ jobs:
 
       # Cache Go modules
       - name: Cache Go modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('./backend/sheffessions_api/go.sum') }}
@@ -104,6 +104,10 @@ jobs:
 
       - name: Install pnpm
         run: npm install -g pnpm
+
+      - name: Install dependencies
+        working-directory: ./frontend/sheffessions
+        run: pnpm install
 
       # Build and run the backend (assuming you have a main.go that starts your server)
       - name: Build and Run Backend
