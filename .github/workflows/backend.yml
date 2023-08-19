@@ -50,12 +50,12 @@ jobs:
       id: deploy
       run: |
         gcloud builds submit backend/sheffessions_api --config backend/sheffessions_api/cloudbuild.yaml
-        false
-      continue-on-error: true  # Allow subsequent steps to run even if this step fails
-
-    - name: Rollback if deployment failed
-      if: steps.deploy.outcome == 'failure'
-      run: |
-        echo "Deployment failed. Rolling back to the previous version."
-        PREVIOUS_VERSION=$(gcloud app versions list --sort-by=~LAST_DEPLOYED --limit=2 | awk 'NR==2{print $2}')
-        gcloud app versions migrate $PREVIOUS_VERSION
+    #     false
+    #   continue-on-error: true  # Allow subsequent steps to run even if this step fails
+    #
+    # - name: Rollback if deployment failed
+    #   if: steps.deploy.outcome == 'failure'
+    #   run: |
+    #     echo "Deployment failed. Rolling back to the previous version."
+    #     PREVIOUS_VERSION=$(gcloud app versions list --sort-by=~LAST_DEPLOYED --limit=2 | awk 'NR==2{print $2}')
+    #     gcloud app versions migrate $PREVIOUS_VERSION
