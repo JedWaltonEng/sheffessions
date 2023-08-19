@@ -21,14 +21,6 @@ jobs:
         cache: true
         cache-dependency-path: ./backend/sheffessions_api/go.sum
 
-    # # Cache Go modules
-    # - name: Cache Go modules
-    #   uses: actions/cache@v3
-    #   with:
-    #     path: ~/go/pkg/mod
-    #     key: ${{ runner.os }}-go-${{ hashFiles('./backend/sheffessions_api/go.sum') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-go-
     - name: Fetch dependencies
       working-directory: ./backend/sheffessions_api
       run: |
@@ -46,7 +38,7 @@ jobs:
     - name: Install Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18' # You can set this to your project's Node.js version
+        node-version: '18'
 
     - name: Cache node modules
       uses: actions/cache@v3
@@ -81,16 +73,6 @@ jobs:
           cache: true
           cache-dependency-path: ./backend/sheffessions_api/go.sum
 
-      # Cache Go modules
-      # - name: Cache Go modules
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: ~/go/pkg/mod
-      #     key: ${{ runner.os }}-go-${{ hashFiles('./backend/sheffessions_api/go.sum') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-go-
-
-      # This part assumes you might have dependencies for your integration tests.
       - name: Fetch dependencies
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
@@ -111,7 +93,6 @@ jobs:
         working-directory: ./frontend/sheffessions
         run: pnpm install
 
-      # Build and run the backend (assuming you have a main.go that starts your server)
       - name: Build and Run Backend
         working-directory: ./backend/sheffessions_api
         run: |
@@ -136,9 +117,8 @@ jobs:
       - name: Shutdown Backend
         if: always()
         run: pkill server
-        # This assumes that "server" is the process name of your backend.
 
-  deploy:
+  deploy-backend:
     needs: [unit-test-backend, unit-test-frontend, integration-test]
     runs-on: ubuntu-latest
     steps:
@@ -168,3 +148,28 @@ jobs:
         echo "Deployment failed. Rolling back to the previous version."
         PREVIOUS_VERSION=$(gcloud app versions list --sort-by=~LAST_DEPLOYED --limit=2 | awk 'NR==2{print $2}')
         gcloud app versions migrate $PREVIOUS_VERSION
+
+  deploy-frontend:
+    needs: [deploy-backend, unit-test-backend, unit-test-frontend, integration-test]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Vercel Preview Deployment
+      env:
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      jobs:
+        Deploy-Preview:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v2
+            - name: Install Vercel CLI
+              run: npm install --global vercel@latest
+
+            - name: Pull Vercel Environment Information
+              run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+            - name: Build Project Artifacts
+              run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+            - name: Deploy Project Artifacts to Vercel
+              run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
