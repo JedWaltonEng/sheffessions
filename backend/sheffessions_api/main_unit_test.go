@@ -5,10 +5,10 @@ import (
 )
 
 func TestHelloWorld(t *testing.T) {
-	got := "Hello, World!"
-	want := "Hello, World!"
+	got := "Hello, Unit World!"
+	want := "Hello, Unit World!"
 
 	if got != want {
-		t.Errorf("HelloWorld() = %q, want %q", got, want)
+		t.Errorf("Hello, Unit World() = %q, want %q", got, want)
 	}
 }

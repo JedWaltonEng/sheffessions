@@ -60,10 +60,53 @@ jobs:
   # integration-tests:
   #   runs-on: ubuntu-latest
   #   steps:
+  integration-test:
+  runs-on: ubuntu-latest
 
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '^1.16'
+
+    # This part assumes you might have dependencies for your integration tests.
+    - name: Fetch dependencies
+      working-directory: ./backend/sheffessions_api
+      run: go get -v ./...
+
+    # Build and run the backend (assuming you have a main.go that starts your server)
+    - name: Build and Run Backend
+      working-directory: ./backend/sheffessions_api
+      run: |
+        go build -o server main.go
+        ./server &
+
+    - name: Wait for Backend to Start
+      run: |
+        while [ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8080)" != "200" ]; do
+          sleep 5
+        done
+
+    - name: Run Backend Integration Tests
+      working-directory: ./backend/sheffessions_api
+      run: go test -v *_integration_test.go
+
+    - name: Run Frontend Integration Tests
+      working-directory: ./frontend/sheffesions
+      run: |
+        pnpm install
+        pnpm test:integration
+
+    - name: Shutdown Backend
+      if: always()
+      run: pkill server
+      # This assumes that "server" is the process name of your backend.
 
   deploy:
-    needs: [unit-test-backend, unit-test-frontend]
+    needs: [unit-test-backend, unit-test-frontend, integration-test]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
