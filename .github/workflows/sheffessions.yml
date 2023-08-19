@@ -29,6 +29,9 @@ jobs:
     #     key: ${{ runner.os }}-go-${{ hashFiles('./backend/sheffessions_api/go.sum') }}
     #     restore-keys: |
     #       ${{ runner.os }}-go-
+    - name: Debug - List files in backend/sheffessions_api
+      working-directory: ./backend/sheffessions_api
+      run: ls -la
 
     - name: Fetch dependencies
       working-directory: ./backend/sheffessions_api
