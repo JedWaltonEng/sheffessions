@@ -9,7 +9,7 @@ on:
     branches: [ "dev" ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -24,10 +24,16 @@ jobs:
       working-directory: ./backend/sheffessions_api
       run: go get -v ./...
 
-    - name: Test
+    - name: Run tests
       working-directory: ./backend/sheffessions_api
       run: go test -v .
 
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
     - name: Authenticate with GCP
       run: echo "$GOOGLE_APPLICATION_CREDENTIALS" | gcloud auth activate-service-account --key-file=-
       env:
@@ -42,5 +48,4 @@ jobs:
 
     - name: Deploy to App Engine via Cloud Build
       run: gcloud builds submit backend/sheffessions_api --config backend/sheffessions_api/cloudbuild.yaml
-
 
