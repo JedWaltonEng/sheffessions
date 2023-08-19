@@ -38,6 +38,9 @@ jobs:
       with:
         node-version: '18' # You can set this to your project's Node.js version
 
+    - name: Install pnpm
+      run: npm install -g pnpm
+
     - name: Cache node modules
       uses: actions/cache@v3
       with:
