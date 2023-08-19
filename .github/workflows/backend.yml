@@ -47,6 +47,7 @@ jobs:
         export_default_credentials: true
 
     - name: Deploy to App Engine via Cloud Build
+      id: deploy
       run: |
         gcloud builds submit backend/sheffessions_api --config backend/sheffessions_api/cloudbuild.yaml
         false
