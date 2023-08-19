@@ -1,8 +1,9 @@
 module.exports = {
-  roots: ['<rootDir>/integration_tests'],
+  roots: ['<rootDir>/src'],
   transform: {
     '^.+\\.tsx?$': 'ts-jest',
   },
-  testMatch: ['**/integration_tests/**/*integration.test.ts'],
+  testMatch: ['**/src/**/*.test.ts', '**/src/**/*.test.tsx'],
+  testPathIgnorePatterns: ['/node_modules/', '/integration_tests/'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 };

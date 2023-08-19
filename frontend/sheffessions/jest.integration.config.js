@@ -4,5 +4,6 @@ module.exports = {
     '^.+\\.tsx?$': 'ts-jest',
   },
   testMatch: ['**/integration_tests/**/*integration.test.ts'],
+  testPathIgnorePatterns: ['/node_modules/'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 };
