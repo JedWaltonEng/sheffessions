@@ -1,6 +1,6 @@
 # This workflow will build a golang project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-name: Go
+name: Sheffessions pipeline 
 
 on:
   push:
@@ -27,8 +27,6 @@ jobs:
     - name: Run tests
       working-directory: ./backend/sheffessions_api
       run: go test -v .
-
-  test-frontend: 
 
   deploy:
     needs: test-backend
