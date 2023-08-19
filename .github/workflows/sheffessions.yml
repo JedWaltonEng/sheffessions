@@ -159,6 +159,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 

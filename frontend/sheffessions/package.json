@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "pnpm install && next build"
     "start": "next start",
     "lint": "next lint",
     "test:unit": "jest --config jest.unit.config.js",
