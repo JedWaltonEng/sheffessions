@@ -43,12 +43,9 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Install Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: '18' # You can set this to your project's Node.js version
-
-    - name: Install pnpm
-      run: npm install -g pnpm
 
     - name: Cache node modules
       uses: actions/cache@v3
@@ -57,6 +54,9 @@ jobs:
         key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.OS }}-pnpm-
+
+    - name: Install pnpm
+      run: npm install -g pnpm
 
     - name: Install dependencies
       working-directory: ./frontend/sheffessions
@@ -95,7 +95,7 @@ jobs:
 
       # Cache pnpm modules
       - name: Cache node modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.pnpm-cache
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -128,7 +128,6 @@ jobs:
         if: always()
         run: pkill server
         # This assumes that "server" is the process name of your backend.
-
 
   deploy:
     needs: [unit-test-backend, unit-test-frontend, integration-test]
