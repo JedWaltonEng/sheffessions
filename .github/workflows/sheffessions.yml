@@ -189,6 +189,7 @@ jobs:
         working-directory: ./frontend/sheffessions
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
 
+
     # steps:
     # - name: Vercel Preview Deployment
     #   env:
