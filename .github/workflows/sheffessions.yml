@@ -2,18 +2,14 @@
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 name: Sheffessions pipeline 
 
-env:
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-
 on:
   push:
-    branches: [ "dev" ]
+    branches: [ "feature/cloudrun" ]
   pull_request:
-    branches: [ "dev" ]
+    branches: [ "feature/cloudrun" ]
 
 jobs:
-  unit-test-backend:
+  unit-test-sheffessions_api:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -64,7 +60,7 @@ jobs:
       run: pnpm test:unit
 
   integration-test:
-    needs: [unit-test-backend, unit-test-frontend]
+    needs: [unit-test-sheffessions_api, unit-test-frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -97,7 +93,7 @@ jobs:
         working-directory: ./frontend/sheffessions
         run: pnpm install
 
-      - name: Build and Run Backend
+      - name: Build and Run sheffessions_api
         working-directory: ./backend/sheffessions_api
         run: |
           go build -o server main.go
@@ -109,7 +105,7 @@ jobs:
             sleep 5
           done
 
-      - name: Run Backend Integration Tests
+      - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
         run: go test -v *_integration_test.go
 
@@ -122,8 +118,8 @@ jobs:
         if: always()
         run: pkill server
 
-  deploy-backend:
-    needs: [unit-test-backend, unit-test-frontend, integration-test]
+  deploy-sheffessions_api:
+    needs: [unit-test-sheffessions_api, unit-test-frontend, integration-test]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -139,17 +135,3 @@ jobs:
         project_id: sheffessions
         service_account_key: ${{ secrets.GCP_CREDENTIALS }}
         export_default_credentials: true
-
-    - name: Deploy to App Engine via Cloud Build
-      id: deploy
-      run: |
-        gcloud builds submit backend/sheffessions_api --config backend/sheffessions_api/cloudbuild.yaml
-      continue-on-error: true  # Allow subsequent steps to run even if this step fails
-
-    - name: Rollback if deployment failed
-      if: steps.deploy.outcome == 'failure'
-      run: |
-        echo "Deployment failed. Rolling back to the previous version."
-        PREVIOUS_VERSION=$(gcloud app versions list --sort-by=~LAST_DEPLOYED --limit=2 | awk 'NR==2{print $2}')
-        gcloud app versions migrate $PREVIOUS_VERSION
-
