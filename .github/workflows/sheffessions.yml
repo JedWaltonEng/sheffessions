@@ -13,192 +13,143 @@ on:
     branches: [ "dev" ]
 
 jobs:
-  # unit-test-backend:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #
-  #   - name: Set up Go
-  #     uses: actions/setup-go@v3
-  #     with:
-  #       go-version: '1.21'
-  #       cache: true
-  #       cache-dependency-path: ./backend/sheffessions_api/go.sum
-  #
-  #   - name: Fetch dependencies
-  #     working-directory: ./backend/sheffessions_api
-  #     run: |
-  #       go get -v ./...
-  #
-  #   - name: Run backend/sheffessions_api unit tests
-  #     working-directory: ./backend/sheffessions_api
-  #     run: go test -v *_unit_test.go
-  #
-  # unit-test-frontend:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   
-  #   - name: Install Node.js
-  #     uses: actions/setup-node@v3
-  #     with:
-  #       node-version: '18'
-  #
-  #   - name: Cache node modules
-  #     uses: actions/cache@v3
-  #     with:
-  #       path: ~/.pnpm-cache
-  #       key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-  #       restore-keys: |
-  #         ${{ runner.OS }}-pnpm-
-  #
-  #   - name: Install pnpm
-  #     run: npm install -g pnpm
-  #
-  #   - name: Install dependencies
-  #     working-directory: ./frontend/sheffessions
-  #     run: pnpm install
-  #   
-  #   - name: Run frontend/sheffessions unit tests
-  #     working-directory: ./frontend/sheffessions
-  #     run: pnpm test:unit
-  #
-  # integration-test:
-  #   needs: [unit-test-backend, unit-test-frontend]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-  #
-  #     - name: Setup Go
-  #       uses: actions/setup-go@v3
-  #       with:
-  #         go-version: '1.21'
-  #         cache: true
-  #         cache-dependency-path: ./backend/sheffessions_api/go.sum
-  #
-  #     - name: Fetch dependencies
-  #       working-directory: ./backend/sheffessions_api
-  #       run: go get -v ./...
-  #
-  #     # Cache pnpm modules
-  #     - name: Cache node modules
-  #       uses: actions/cache@v3
-  #       with:
-  #         path: ~/.pnpm-cache
-  #         key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-pnpm-
-  #
-  #     - name: Install pnpm
-  #       run: npm install -g pnpm
-  #
-  #     - name: Install dependencies
-  #       working-directory: ./frontend/sheffessions
-  #       run: pnpm install
-  #
-  #     - name: Build and Run Backend
-  #       working-directory: ./backend/sheffessions_api
-  #       run: |
-  #         go build -o server main.go
-  #         ./server &
-  #
-  #     - name: Wait for Backend to Start
-  #       run: |
-  #         while ! curl -s localhost:8080 > /dev/null; do
-  #           sleep 5
-  #         done
-  #
-  #     - name: Run Backend Integration Tests
-  #       working-directory: ./backend/sheffessions_api
-  #       run: go test -v *_integration_test.go
-  #
-  #     - name: Run Frontend Integration Tests
-  #       working-directory: ./frontend/sheffessions
-  #       run: |
-  #         pnpm test:integration
-  #
-  #     - name: Shutdown Backend
-  #       if: always()
-  #       run: pkill server
-  #
-  # deploy-backend:
-  #   needs: [unit-test-backend, unit-test-frontend, integration-test]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   
-  #   - name: Authenticate with GCP
-  #     run: echo "$GOOGLE_APPLICATION_CREDENTIALS" | gcloud auth activate-service-account --key-file=-
-  #     env:
-  #       GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-  #
-  #   - name: Set up Cloud SDK
-  #     uses: google-github-actions/setup-gcloud@v0.2.0
-  #     with:
-  #       project_id: sheffessions
-  #       service_account_key: ${{ secrets.GCP_CREDENTIALS }}
-  #       export_default_credentials: true
-  #
-  #   - name: Deploy to App Engine via Cloud Build
-  #     id: deploy
-  #     run: |
-  #       gcloud builds submit backend/sheffessions_api --config backend/sheffessions_api/cloudbuild.yaml
-  #     continue-on-error: true  # Allow subsequent steps to run even if this step fails
-  #
-  #   - name: Rollback if deployment failed
-  #     if: steps.deploy.outcome == 'failure'
-  #     run: |
-  #       echo "Deployment failed. Rolling back to the previous version."
-  #       PREVIOUS_VERSION=$(gcloud app versions list --sort-by=~LAST_DEPLOYED --limit=2 | awk 'NR==2{print $2}')
-  #       gcloud app versions migrate $PREVIOUS_VERSION
-
-  deploy-frontend-preview:
-    # needs: [deploy-backend, unit-test-backend, unit-test-frontend, integration-test]
+  unit-test-backend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Install Node.js
-        uses: actions/setup-node@v3
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '1.21'
+        cache: true
+        cache-dependency-path: ./backend/sheffessions_api/go.sum
+
+    - name: Fetch dependencies
+      working-directory: ./backend/sheffessions_api
+      run: |
+        go get -v ./...
+
+    - name: Run backend/sheffessions_api unit tests
+      working-directory: ./backend/sheffessions_api
+      run: go test -v *_unit_test.go
+
+  unit-test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Cache node modules
+      uses: actions/cache@v3
+      with:
+        path: ~/.pnpm-cache
+        key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.OS }}-pnpm-
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install dependencies
+      working-directory: ./frontend/sheffessions
+      run: pnpm install
+    
+    - name: Run frontend/sheffessions unit tests
+      working-directory: ./frontend/sheffessions
+      run: pnpm test:unit
+
+  integration-test:
+    needs: [unit-test-backend, unit-test-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
         with:
-          node-version: 18
+          go-version: '1.21'
+          cache: true
+          cache-dependency-path: ./backend/sheffessions_api/go.sum
 
-      - uses: pnpm/action-setup@v2
-        name: Install pnpm
-        id: pnpm-install
+      - name: Fetch dependencies
+        working-directory: ./backend/sheffessions_api
+        run: go get -v ./...
+
+      # Cache pnpm modules
+      - name: Cache node modules
+        uses: actions/cache@v3
         with:
-          version: 7
-          run_install: false
+          path: ~/.pnpm-cache
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
-      - name: Install Vercel CLI
-        run: pnpm add --global vercel@latest
+      - name: Install pnpm
+        run: npm install -g pnpm
 
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Install dependencies
+        working-directory: ./frontend/sheffessions
+        run: pnpm install
 
-      - name: Build Project Artifacts
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build and Run Backend
+        working-directory: ./backend/sheffessions_api
+        run: |
+          go build -o server main.go
+          ./server &
 
-      - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-    # steps:
-    # - name: Vercel Preview Deployment
-    #   env:
-    #     VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-    #   jobs:
-    #     Deploy-Preview:
-    #       runs-on: ubuntu-latest
-    #       steps:
-    #         - uses: actions/checkout@v2
-    #         - name: Install Vercel CLI
-    #           run: npm install --global vercel@latest
-    #
-    #         - name: Pull Vercel Environment Information
-    #           run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-    #
-    #         - name: Build Project Artifacts
-    #           run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-    #
-    #         - name: Deploy Project Artifacts to Vercel
-    #           run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Wait for Backend to Start
+        run: |
+          while ! curl -s localhost:8080 > /dev/null; do
+            sleep 5
+          done
+
+      - name: Run Backend Integration Tests
+        working-directory: ./backend/sheffessions_api
+        run: go test -v *_integration_test.go
+
+      - name: Run Frontend Integration Tests
+        working-directory: ./frontend/sheffessions
+        run: |
+          pnpm test:integration
+
+      - name: Shutdown Backend
+        if: always()
+        run: pkill server
+
+  deploy-backend:
+    needs: [unit-test-backend, unit-test-frontend, integration-test]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Authenticate with GCP
+      run: echo "$GOOGLE_APPLICATION_CREDENTIALS" | gcloud auth activate-service-account --key-file=-
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v0.2.0
+      with:
+        project_id: sheffessions
+        service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+        export_default_credentials: true
+
+    - name: Deploy to App Engine via Cloud Build
+      id: deploy
+      run: |
+        gcloud builds submit backend/sheffessions_api --config backend/sheffessions_api/cloudbuild.yaml
+      continue-on-error: true  # Allow subsequent steps to run even if this step fails
+
+    - name: Rollback if deployment failed
+      if: steps.deploy.outcome == 'failure'
+      run: |
+        echo "Deployment failed. Rolling back to the previous version."
+        PREVIOUS_VERSION=$(gcloud app versions list --sort-by=~LAST_DEPLOYED --limit=2 | awk 'NR==2{print $2}')
+        gcloud app versions migrate $PREVIOUS_VERSION
+
