@@ -8,19 +8,22 @@ services:
     # environment:
     #   - MYSQL_DATABASE=devdb
     #   - MYSQL_ROOT_PASSWORD=devpassword
-    env_file:
-      - ../.env
     ports:
       - '3306:3306'
     volumes:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - ../.env
 
   frontend:
     image: sheffessions_fe 
     build:
       context: ../frontend/sheffessions
+      dockerfile:  Dockerfile.dev
     ports:
       - '3000:3000'
+    volumes:
+      - ../frontend/sheffessions:/app
     env_file:
       - ../.env
 

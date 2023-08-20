@@ -1,0 +1,18 @@
+# Using a base node image
+FROM node:18-alpine
+
+WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Install pnpm globally in the container
+RUN npm install -g pnpm
+
+# Copy package.json and pnpm-lock.yaml to utilize Docker cache
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies using pnpm
+RUN pnpm install
+
+# This command will be used to start the dev server
+CMD ["pnpm", "run", "dev"]

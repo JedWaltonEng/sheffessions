@@ -37,7 +37,7 @@ func handleConfessions(w http.ResponseWriter, r *http.Request) {
 		}
 		confessions = append(confessions, confession)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Confession received."))
+		w.Write([]byte("Confession received"))
 		log.Println("Confession received: ", confession)
 	} else if r.Method == http.MethodGet {
 		json.NewEncoder(w).Encode(confessions)

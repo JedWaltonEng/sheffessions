@@ -50,7 +50,7 @@ class SubmissionForm extends React.Component<{}, State> {
       });
 
       if (responseGoAPI.ok) {
-        alert('Your Sheffession has been submitted :)');
+        alert('Your Sheffession has been submitted. :)');
         this.setState({ value: '' });
 
         // Update the cookie with the new count
