@@ -26,10 +26,9 @@ class SubmissionForm extends React.Component<{}, State> {
 
   // env variables for dev, staging and prod
   apiURL = 'http://localhost:8080/confessions';  // Change to your Go API endpoint if it's different.
-  // apiURL2 = 'https://sheffessions-api.onrender.com/confessions';  // Change to your Go API endpoint if it's different.
 
   // env variables for dev, staging and prod
-  webhookURL = 'https://discord.com/api/webhooks/1141479151178629291/1lFcn3RBk_HizyPNkTXBc95kScxfNoroK4-vzi7xzJZhG5IUuxOOucW2fut7qCQ9qNWO';
+  // webhookURL = 'https://discord.com/api/webhooks/1141479151178629291/1lFcn3RBk_HizyPNkTXBc95kScxfNoroK4-vzi7xzJZhG5IUuxOOucW2fut7qCQ9qNWO';
 
   async handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -41,14 +40,7 @@ class SubmissionForm extends React.Component<{}, State> {
     }
 
     try {
-      const responseDiscord = await fetch(this.webhookURL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content: this.state.value })
-      });
-
+      // make post to discord on backend after successfully stored to db
       const responseGoAPI = await fetch(this.apiURL, {
         method: 'POST',
         headers: {
@@ -57,7 +49,7 @@ class SubmissionForm extends React.Component<{}, State> {
         body: JSON.stringify({ content: this.state.value })
       });
 
-      if (responseDiscord.ok && responseGoAPI.ok) {
+      if (responseGoAPI.ok) {
         alert('Your Sheffession has been submitted :)');
         this.setState({ value: '' });
 
