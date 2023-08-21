@@ -234,7 +234,7 @@ jobs:
   production-build-sheffessions_fe:
     runs-on: ubuntu-latest
     outputs:
-      timestamp2: ${{ steps.generate_tag.outputs.timestamp }}
+      timestamp2: ${{ steps.generate_tag.outputs.timestamp2 }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
