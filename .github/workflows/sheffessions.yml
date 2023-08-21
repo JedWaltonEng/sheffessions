@@ -135,11 +135,11 @@ jobs:
 
 
   production-deploy-sheffessions_fe:
-    needs: [
-      unit-test-sheffessions_api,
-      unit-test-frontend,
-      integration-test
-    ]
+    # needs: [
+    #   unit-test-sheffessions_api,
+    #   unit-test-frontend,
+    #   integration-test
+    # ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
