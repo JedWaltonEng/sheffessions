@@ -162,6 +162,8 @@ jobs:
         run: |
           echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
           echo "::set-output name=DOCKER_TAG::$DOCKER_TAG"
+          echo "Generated DOCKER_TAG: $DOCKER_TAG"
+
 
 
       - name: 'Build and push Docker image'
