@@ -133,42 +133,72 @@ jobs:
   #       if: always()
   #       run: pkill server
 
-
   production-deploy-sheffessions_fe:
-    # needs: [
-    #   unit-test-sheffessions_api,
-    #   unit-test-frontend,
-    #   integration-test
-    # ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v1'
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
 
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v1'
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
 
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
+    - name: 'Use gcloud CLI'
+      run: 'gcloud info'
 
-      # Configure Docker to use gcloud command-line tool as a credential helper for Artifact Registry
-     - name: 'Configure Docker for Artifact Registry'
-       run: |
-         gcloud --quiet auth configure-docker europe-docker.pkg.dev
+    # Configure Docker to use gcloud command-line tool as a credential helper for Artifact Registry
+    - name: 'Configure Docker for Artifact Registry'
+      run: |
+        gcloud --quiet auth configure-docker europe-docker.pkg.dev
 
-      - name: Generate tag with date and timestamp
-        run: echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+    - name: Generate tag with date and timestamp
+      run: echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
-     # Build and push the Docker image to Artifact Registry
-     - name: 'Build and push Docker image'
-       run: |
-         docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG} .
-         docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG}
+    # Build and push the Docker image to Artifact Registry
+    - name: 'Build and push Docker image'
+      run: |
+        docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG} .
+        docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG}
+
+  # production-deploy-sheffessions_fe:
+  #   # needs: [
+  #   #   unit-test-sheffessions_api,
+  #   #   unit-test-frontend,
+  #   #   integration-test
+  #   # ]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #
+  #     - id: 'auth'
+  #       uses: 'google-github-actions/auth@v1'
+  #       with:
+  #         credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
+  #
+  #     - name: 'Set up Cloud SDK'
+  #       uses: 'google-github-actions/setup-gcloud@v1'
+  #
+  #     - name: 'Use gcloud CLI'
+  #       run: 'gcloud info'
+  #
+  #     # Configure Docker to use gcloud command-line tool as a credential helper for Artifact Registry
+  #    - name: 'Configure Docker for Artifact Registry'
+  #      run: |
+  #        gcloud --quiet auth configure-docker europe-docker.pkg.dev
+  #
+  #     - name: Generate tag with date and timestamp
+  #       run: echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+  #
+  #    # Build and push the Docker image to Artifact Registry
+  #    - name: 'Build and push Docker image'
+  #      run: |
+  #        docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG} .
+  #        docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG}
 
   # deploy-sheffessions_api:
   #   needs: [unit-test-sheffessions_api, unit-test-frontend, integration-test]
