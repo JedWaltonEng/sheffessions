@@ -159,6 +159,7 @@ jobs:
         run: echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
       - name: 'Build and push Docker image'
+        working-directory: ./backend/sheffessions_api
         run: |
           docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:sheffessions_api-${DOCKER_TAG} .
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:sheffessions_api-${DOCKER_TAG}
