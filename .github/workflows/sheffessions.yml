@@ -157,7 +157,6 @@ jobs:
 
       - name: Generate tag with date and timestamp
         run: echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
-        run: echo "DOCKER_TAG=${DOCKER_TAG}"
 
       - name: 'Build and push Docker image'
         working-directory: ./backend/sheffessions_api
