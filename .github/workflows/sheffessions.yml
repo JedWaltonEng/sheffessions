@@ -135,12 +135,10 @@ jobs:
 
 
   production-deploy-sheffessions_fe:
-    if: ${{ secrets.ENV }} == 'PRODUCTION'
     needs: [
       unit-test-sheffessions_api,
       unit-test-frontend,
-      integration-test,
-      check-env
+      integration-test
     ]
     runs-on: ubuntu-latest
     steps:
