@@ -134,6 +134,11 @@ jobs:
   #       run: pkill server
 
   production-build-sheffessions_api:
+    needs: [
+      unit-test-sheffessions_api,
+      unit-test-frontend,
+      integration-test
+    ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -162,12 +167,17 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: |
           docker build \
-            --build-arg MYSQL_DATABASE_PRODUCTION=${{ MYSQL_DATABASE_PRODUCTION }} \
-            --build-arg MYSQL_ROOT_PASSWORD_PRODUCTION=${{ MYSQL_ROOT_PASSWORD_PRODUCTION }} \
+            --build-arg MYSQL_DATABASE_PRODUCTION=${{ secrets.MYSQL_DATABASE_PRODUCTION }} \
+            --build-arg MYSQL_ROOT_PASSWORD_PRODUCTION=${{ secrets.MYSQL_ROOT_PASSWORD_PRODUCTION }} \
             -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${DOCKER_TAG} .
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${DOCKER_TAG}
 
   production-build-sheffessions_fe:
+    needs: [
+      unit-test-sheffessions_api,
+      unit-test-frontend,
+      integration-test
+    ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
