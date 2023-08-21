@@ -5,6 +5,8 @@ interface State {
   value: string;
 }
 
+type NewType = string;
+
 class SubmissionForm extends React.Component<{}, State> {
   constructor(props: {}) {
     super(props);
@@ -24,8 +26,25 @@ class SubmissionForm extends React.Component<{}, State> {
   //   event.preventDefault();
   // }
 
+  // componentDidMount() {
+  //   console.log(process.env.CUSTOM_ENV);  // This should print "DEV" if set properly
+  // }
   // env variables for dev, staging and prod
-  apiURL = 'http://localhost:8080/confessions';  // Change to your Go API endpoint if it's different.
+  // apiURL = 'http://localhost:8080/confessions';  // Change to your Go API endpoint if it's different.
+
+  getAPIURL(): string {
+    switch (process.env.ENV) {
+      case 'DEVELOPMENT':
+        return 'http://localhost:8080/confessions';
+      case 'PRODUCTION':
+        return 'https://sheffessions-api-s3vpbhlkuq-ew.a.run.app/confessions';
+      default:
+        throw new Error('Unknown environment: ' + process.env.ENV);
+    }
+  }
+
+
+  apiURL = this.getAPIURL();
 
   // env variables for dev, staging and prod
   // webhookURL = 'https://discord.com/api/webhooks/1141479151178629291/1lFcn3RBk_HizyPNkTXBc95kScxfNoroK4-vzi7xzJZhG5IUuxOOucW2fut7qCQ9qNWO';
@@ -52,6 +71,7 @@ class SubmissionForm extends React.Component<{}, State> {
       if (responseGoAPI.ok) {
         alert('Your Sheffession has been submitted. :)');
         this.setState({ value: '' });
+
 
         // Update the cookie with the new count
         const newCount = confessionCount ? parseInt(confessionCount) + 1 : 1;
