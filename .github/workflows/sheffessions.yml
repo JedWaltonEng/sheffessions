@@ -133,56 +133,56 @@ jobs:
         if: always()
         run: pkill server
 
-  # check-env:
-  #   needs: [ 
-  #     integration-test,
-  #     unit-test-sheffessions_api,
-  #     unit-test-frontend
-  #   ]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v2
-  #
-  #     - name: Read .env and set ENV variable
-  #       id: read_env
-  #       run: |
-  #         echo "ENV_VALUE=$(grep 'ENV=' .env | cut -d '=' -f2)" >> $GITHUB_ENV
-  #         echo "::set-output name=env_value::$(grep 'ENV=' .env | cut -d '=' -f2)"
+  check-env:
+    needs: [ 
+      integration-test,
+      unit-test-sheffessions_api,
+      unit-test-frontend
+    ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-  # production-deploy-sheffessions_fe:
-  #   if: needs.check-env.outputs.env_value == 'PRODUCTION'
-  #   needs: [
-  #     unit-test-sheffessions_api,
-  #     unit-test-frontend,
-  #     integration-test,
-  #     check-env
-  #   ]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-  #
-  #     - name: Set up Google Cloud SDK
-  #       uses: google-github-actions/setup-gcloud@master
-  #       with:
-  #         service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY_PRODUCTION }}
-  #         project_id: ${{ secrets.GCP_PROJECT_ID_PRODUCTION }}
-  #
-  #     - name: Build and push Docker image to Google Artifact Registry
-  #       run: |
-  #         docker build -t $REGION-docker.pkg.dev/$GCP_PROJECT_ID/my-repo/sheffessions_fe:latest -f frontend/sheffessions/Dockerfile frontend/sheffessions
-  #         gcloud --quiet auth configure-docker $REGION-docker.pkg.dev
-  #         docker push $REGION-docker.pkg.dev/$GCP_PROJECT_ID/my-repo/sheffessions_fe:latest
-  #       env:
-  #         GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_PRODUCTION }}
-  #         REGION: ${{ secrets.REGION_PRODUCTION }}
-  #
-  #     - name: Deploy to Google Cloud Run
-  #       run: |
-  #         gcloud run deploy sheffessions_fe --image $REGION-docker.pkg.dev/$GCP_PROJECT_ID/my-repo/sheffessions_fe:latest --platform managed --region $REGION
-  #       env:
-  #         REGION: ${{ secrets.REGION_PRODUCTION }}
+      - name: Read .env and set ENV variable
+        id: read_env
+        run: |
+          echo "ENV_VALUE=$(grep 'ENV=' .env | cut -d '=' -f2)" >> $GITHUB_ENV
+          echo "::set-output name=env_value::$(grep 'ENV=' .env | cut -d '=' -f2)"
+
+  production-deploy-sheffessions_fe:
+    if: needs.check-env.outputs.env_value == 'PRODUCTION'
+    needs: [
+      unit-test-sheffessions_api,
+      unit-test-frontend,
+      integration-test,
+      check-env
+    ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY_PRODUCTION }}
+          project_id: ${{ secrets.GCP_PROJECT_ID_PRODUCTION }}
+
+      - name: Build and push Docker image to Google Artifact Registry
+        run: |
+          docker build -t $REGION-docker.pkg.dev/$GCP_PROJECT_ID/my-repo/sheffessions_fe:latest -f frontend/sheffessions/Dockerfile frontend/sheffessions
+          gcloud --quiet auth configure-docker $REGION-docker.pkg.dev
+          docker push $REGION-docker.pkg.dev/$GCP_PROJECT_ID/my-repo/sheffessions_fe:latest
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_PRODUCTION }}
+          REGION: ${{ secrets.REGION_PRODUCTION }}
+
+      - name: Deploy to Google Cloud Run
+        run: |
+          gcloud run deploy sheffessions_fe --image $REGION-docker.pkg.dev/$GCP_PROJECT_ID/my-repo/sheffessions_fe:latest --platform managed --region $REGION
+        env:
+          REGION: ${{ secrets.REGION_PRODUCTION }}
 
   # deploy-sheffessions_api:
   #   needs: [unit-test-sheffessions_api, unit-test-frontend, integration-test]
