@@ -157,12 +157,13 @@ jobs:
 
       - name: Generate tag with date and timestamp
         run: echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+        run: echo "DOCKER_TAG=${DOCKER_TAG}"
 
       - name: 'Build and push Docker image'
         working-directory: ./backend/sheffessions_api
         run: |
-          docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:sheffessions_api-${DOCKER_TAG} .
-          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:sheffessions_api-${DOCKER_TAG}
+          docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${DOCKER_TAG} .
+          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${DOCKER_TAG}
 
   # production-deploy-sheffessions_fe:
   #   # needs: [
