@@ -160,8 +160,8 @@ jobs:
 
       - name: 'Build and push Docker image'
         run: |
-          docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:sheffessions_api:${DOCKER_TAG} .
-          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:sheffessions_api:${DOCKER_TAG}
+          docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:sheffessions_api-${DOCKER_TAG} .
+          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:sheffessions_api-${DOCKER_TAG}
 
   # production-deploy-sheffessions_fe:
   #   # needs: [
