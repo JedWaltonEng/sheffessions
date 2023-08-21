@@ -215,11 +215,11 @@ jobs:
         run: |
           gcloud --quiet auth configure-docker europe-docker.pkg.dev
 
-      # Generate the image tag
+      # Generate the image tag combining the commit hash and timestamp
       - name: Generate image tag
         id: generate_tag
         run: |
-          echo "::set-output name=timestamp::$(date +'%Y%m%d-%H%M%S')"
+          echo "::set-output name=image_tag::${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')"
 
       # Build and push the Docker image using the generated tag
       - name: 'Build and push Docker image'
