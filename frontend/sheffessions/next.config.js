@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone'
-  // env: {
-  //   ENV: process.env.ENV
-  // }
+  output: 'standalone',
+  env: {
+    ENV: process.env.ENV
+  }
 }
 
 module.exports = nextConfig
