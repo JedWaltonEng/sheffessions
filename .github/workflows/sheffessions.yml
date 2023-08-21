@@ -171,6 +171,7 @@ jobs:
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.tag }}
 
   production-deploy-sheffessions_api:
+    needs: production-build-sheffessions_api
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
