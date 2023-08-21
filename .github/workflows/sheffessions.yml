@@ -162,8 +162,8 @@ jobs:
       - name: 'Build and push Docker image'
         working-directory: ./backend/sheffessions_api
         run: |
-          docker build -t sheffessions_api:${DOCKER_TAG} .
-          docker push sheffessions_api:${DOCKER_TAG}
+          docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG} .
+          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG}
 
   # production-deploy-sheffessions_fe:
   #   # needs: [
