@@ -295,8 +295,7 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
-            --project=sheffessions \
-            --set-env-vars=ENV=PRODUCTION
+            --project=sheffessions
 
 
   production-deploy-sheffessions_fe:
