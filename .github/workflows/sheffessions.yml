@@ -183,7 +183,7 @@ jobs:
             --image=europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ needs.production-build-sheffessions_api.outputs.tag }} \
             --region=europe-west1 \
             --platform=managed \
-            --allow-unauthenticated
+            --allow-unauthenticated \
             --project=sheffessions
 
   # production-build-sheffessions_fe:
