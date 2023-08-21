@@ -135,6 +135,8 @@ jobs:
 
   production-build-sheffessions_api:
     runs-on: ubuntu-latest
+    outputs:
+      docker_tag: ${{ steps.generate_tag.outputs.tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -156,7 +158,8 @@ jobs:
           gcloud --quiet auth configure-docker europe-docker.pkg.dev
 
       - name: Generate tag with date and timestamp
-        run: echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+        id: generate_tag
+        run: echo "::set-output name=tag::$(date +'%Y%m%d-%H%M%S')"
 
       - name: 'Build and push Docker image'
         working-directory: ./backend/sheffessions_api
@@ -164,14 +167,11 @@ jobs:
           docker build \
             --build-arg MYSQL_DATABASE_PRODUCTION=${{ secrets.MYSQL_DATABASE_PRODUCTION }} \
             --build-arg MYSQL_ROOT_PASSWORD_PRODUCTION=${{ secrets.MYSQL_ROOT_PASSWORD_PRODUCTION }} \
-            -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${DOCKER_TAG} .
-          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${DOCKER_TAG}
-
+            -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.tag }} .
+          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.tag }}
 
   production-deploy-sheffessions_api:
-    needs: [
-      production-build-sheffessions_api
-      ]
+    needs: production-build-sheffessions_api
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -180,7 +180,7 @@ jobs:
       - name: 'Deploy to Cloud Run (API)'
         run: |
           gcloud run deploy sheffessions-api \
-            --image=europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${DOCKER_TAG} \
+            --image=europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ needs.production-build-sheffessions_api.outputs.docker_tag }} \
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated
