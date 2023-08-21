@@ -184,6 +184,7 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated
+            --project=sheffessions
 
   # production-build-sheffessions_fe:
   #   runs-on: ubuntu-latest
