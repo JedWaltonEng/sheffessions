@@ -319,7 +319,7 @@ jobs:
       # Deploy to Cloud Run using the generated image tag
       - name: 'Deploy to Cloud Run (API)'
         run: |
-          gcloud run deploy sheffessions-api \
+          gcloud run deploy sheffessions-fe \
             --image=europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ needs.production-build-sheffessions_fe.outputs.timestamp2 }} \
             --region=europe-west1 \
             --platform=managed \
