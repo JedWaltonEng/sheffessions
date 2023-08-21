@@ -133,7 +133,7 @@ jobs:
   #       if: always()
   #       run: pkill server
 
-  production-deploy-sheffessions_fe:
+  production-build-sheffessions_api:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -161,8 +161,43 @@ jobs:
       - name: 'Build and push Docker image'
         working-directory: ./backend/sheffessions_api
         run: |
-          docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${DOCKER_TAG} .
+          docker build \
+            --build-arg MYSQL_DATABASE_PRODUCTION=${{ MYSQL_DATABASE_PRODUCTION }} \
+            --build-arg MYSQL_ROOT_PASSWORD_PRODUCTION=${{ MYSQL_ROOT_PASSWORD_PRODUCTION }} \
+            -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${DOCKER_TAG} .
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${DOCKER_TAG}
+
+  production-build-sheffessions_fe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      # Configure Docker to use gcloud command-line tool as a credential helper for Artifact Registry
+      - name: 'Configure Docker for Artifact Registry'
+        run: |
+          gcloud --quiet auth configure-docker europe-docker.pkg.dev
+
+      - name: Generate tag with date and timestamp
+        run: echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+
+      - name: 'Build and push Docker image'
+        working-directory: ./frontend/sheffessions
+        run: |
+          docker build \
+            -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${DOCKER_TAG} .
+          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${DOCKER_TAG}
 
   # production-deploy-sheffessions_fe:
   #   # needs: [
