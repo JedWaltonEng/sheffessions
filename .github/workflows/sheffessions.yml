@@ -299,7 +299,7 @@ jobs:
 
 
   production-deploy-sheffessions_fe:
-    needs: production-build-sheffessions_api
+    needs: production-build-sheffessions_fe
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
