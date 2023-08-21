@@ -155,15 +155,12 @@ jobs:
         run: |
           gcloud --quiet auth configure-docker europe-docker.pkg.dev
 
-      - name: Generate tag with date and timestamp
-        run: echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
-
       # Build and push the Docker image to Artifact Registry
       - name: 'Build and push Docker image'
         working-directory: ./backend/sheffessions_api
         run: |
-          docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG} .
-          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG}
+          docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository .
+          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository
 
   # production-deploy-sheffessions_fe:
   #   # needs: [
