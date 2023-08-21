@@ -156,6 +156,20 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
+      # Configure Docker to use gcloud command-line tool as a credential helper for Artifact Registry
+     - name: 'Configure Docker for Artifact Registry'
+       run: |
+         gcloud --quiet auth configure-docker europe-docker.pkg.dev
+
+      - name: Generate tag with date and timestamp
+        run: echo "DOCKER_TAG=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+
+     # Build and push the Docker image to Artifact Registry
+     - name: 'Build and push Docker image'
+       run: |
+         docker build -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG} .
+         docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository:${DOCKER_TAG}
+
   # deploy-sheffessions_api:
   #   needs: [unit-test-sheffessions_api, unit-test-frontend, integration-test]
   #   runs-on: ubuntu-latest
