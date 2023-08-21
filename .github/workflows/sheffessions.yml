@@ -133,25 +133,9 @@ jobs:
         if: always()
         run: pkill server
 
-  check-env:
-    needs: [ 
-      integration-test,
-      unit-test-sheffessions_api,
-      unit-test-frontend
-    ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Read .env and set ENV variable
-        id: read_env
-        run: |
-          echo "ENV_VALUE=$(grep 'ENV=' .env | cut -d '=' -f2)" >> $GITHUB_ENV
-          echo "::set-output name=env_value::$(grep 'ENV=' .env | cut -d '=' -f2)"
 
   production-deploy-sheffessions_fe:
-    if: needs.check-env.outputs.env_value == 'PRODUCTION'
+    if: ${{ secrets.ENV }} == 'PRODUCTION'
     needs: [
       unit-test-sheffessions_api,
       unit-test-frontend,
