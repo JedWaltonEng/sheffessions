@@ -52,7 +52,7 @@ class SubmissionForm extends React.Component<{}, State> {
       if (responseGoAPI.ok) {
         alert('Your Sheffession has been submitted. :)');
         this.setState({ value: '' });
-        console.log(process.env.ENV)
+        console.log(process.env.NEXT_PUBLIC_ENV)
 
         // Update the cookie with the new count
         const newCount = confessionCount ? parseInt(confessionCount) + 1 : 1;

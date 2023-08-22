@@ -41,7 +41,7 @@ WORKDIR /app
 
 ENV NODE_ENV production
 
-ENV ENV PRODUCTION
+ENV NEXT_PUBLIC_ENV PRODUCTION
 
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED 1
