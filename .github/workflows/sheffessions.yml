@@ -260,7 +260,7 @@ jobs:
       unit-test-frontend,
       production-build-sheffessions_api,
       production-build-sheffessions_fe,
-      production-deploy-sheffessions_fe
+      production-deploy-sheffessions_api
     ] 
     runs-on: ubuntu-latest
     steps:
