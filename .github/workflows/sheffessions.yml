@@ -319,6 +319,10 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --project=sheffessions-staging
+            --memory=128Mi \
+            --cpu=1 \
+            --timeout=300s \
+            --concurrency=80
 
   production-deploy-sheffessions_api:
     needs: production-build-sheffessions_api
@@ -346,7 +350,13 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
-            --project=sheffessions
+            --project=sheffessions \
+            --memory=128Mi \
+            --cpu=1 \
+            --timeout=300s \
+            --concurrency=80 \
+            --min-instances=0 \
+            --max-instances=10
 
   staging-deploy-sheffessions_fe:
     needs: staging-build-sheffessions_fe
@@ -374,7 +384,13 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
-            --project=sheffessions-staging
+            --project=sheffessions-staging \
+            --memory=512Mi \
+            --cpu=1 \
+            --timeout=300s \
+            --concurrency=80 \
+            --min-instances=0 \
+            --max-instances=10
 
   production-deploy-sheffessions_fe:
     needs: production-build-sheffessions_fe
@@ -402,4 +418,10 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
-            --project=sheffessions
+            --project=sheffessions \
+            --memory=512Mi \
+            --cpu=1 \
+            --timeout=300s \
+            --concurrency=80 \
+            --min-instances=0 \
+            --max-instances=10
