@@ -267,6 +267,7 @@ jobs:
         working-directory: ./frontend/sheffessions
         run: |
           docker build \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
             -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe}} .
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe }}
 
@@ -325,5 +326,4 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
-            --project=sheffessions \
-            --set-env-vars=NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            --project=sheffessions
