@@ -267,7 +267,6 @@ jobs:
         working-directory: ./frontend/sheffessions
         run: |
           docker build \
-            --build-arg ENV=PRODUCTION \
             -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe}} .
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe }}
 
@@ -326,4 +325,6 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
+            --set-env-vars=\
+              NEXT_PUBLIC_ENV=PRODUCTION\
             --project=sheffessions
