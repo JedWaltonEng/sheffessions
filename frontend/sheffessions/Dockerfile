@@ -27,11 +27,6 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Declare the build argument
-ARG ENV
-# Set the environment variable using the build argument
-ENV NEXT_PUBLIC_ENV=$ENV
-
 # If using npm comment out above and use below instead
 # RUN npm run build
 RUN npm install -g pnpm
