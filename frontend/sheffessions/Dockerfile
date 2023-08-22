@@ -28,9 +28,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # Declare the build argument
-ARG NEXT_PUBLIC_ENV
+ARG ENV
 # Set the environment variable using the build argument
-ENV NEXT_PUBLIC_ENV=$NEXT_PUBLIC_ENV
+ENV NEXT_PUBLIC_ENV=$ENV
 
 # If using npm comment out above and use below instead
 # RUN npm run build
