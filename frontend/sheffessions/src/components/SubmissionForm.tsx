@@ -27,6 +27,15 @@ class SubmissionForm extends React.Component<{}, State> {
   // env variables for dev, staging and prod
   apiURL = 'http://localhost:8080/confessions';  // Change to your Go API endpoint if it's different.
 
+  getAPIURL(): string { 
+    if (process.env.NEXT_PUBLIC_ENV === 'DEVELOPMENT') {
+      return 'http://localhost:8080/confessions';
+    } else if (process.env.NEXT_PUBLIC_ENV === 'PRODUCTION') {
+      return 'https://sheffessions-api-s3vpbhlkuq-ew.a.run.app/confessions';
+    } else {
+      return 'ENV in .env not set correctly.';
+    }
+  }
   // env variables for dev, staging and prod
   // webhookURL = 'https://discord.com/api/webhooks/1141479151178629291/1lFcn3RBk_HizyPNkTXBc95kScxfNoroK4-vzi7xzJZhG5IUuxOOucW2fut7qCQ9qNWO';
 
