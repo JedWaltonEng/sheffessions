@@ -27,6 +27,7 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
+ENV NEXT_PUBLIC_ENV PRODUCTION
 # RUN yarn build
 
 # If using npm comment out above and use below instead
@@ -40,8 +41,6 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
-
-ENV NEXT_PUBLIC_ENV PRODUCTION
 
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED 1
