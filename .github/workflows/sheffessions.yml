@@ -322,7 +322,7 @@ jobs:
       - name: 'Deploy to Cloud Run (API)'
         run: |
           gcloud run deploy sheffessions-fe \
-            --image=europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ needs.production-build-sheffessions_fe.outputs.timestamp2 }} \
+            --image=europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ needs.production-build-sheffessions_fe.outputs.image_tag_sheffessions_fe }} \
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
