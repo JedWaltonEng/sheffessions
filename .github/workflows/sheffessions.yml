@@ -326,5 +326,5 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --set-env-vars=\
-              NEXT_PUBLIC_ENV=PRODUCTION\
+              NEXT_PUBLIC_ENV=PRODUCTION \
             --project=sheffessions
