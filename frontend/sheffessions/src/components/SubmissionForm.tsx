@@ -5,6 +5,8 @@ interface State {
   value: string;
 }
 
+const apiURL = process.env.NEXT_PUBLIC_API_URL;
+
 class SubmissionForm extends React.Component<{}, State> {
   constructor(props: {}) {
     super(props);
@@ -29,7 +31,6 @@ class SubmissionForm extends React.Component<{}, State> {
   // apiURL_production = 'https://sheffessions-api-s3vpbhlkuq-ew.a.run.app/confessions';
   apiURL_development = 'http://localhost:8080/confessions'; 
   // apiURL = process.env.
-  apiURL = process.env.NEXT_PUBLIC_API_URL + '/confessions';
   // env variables for dev, staging and prod
   // webhookURL = 'https://discord.com/api/webhooks/1141479151178629291/1lFcn3RBk_HizyPNkTXBc95kScxfNoroK4-vzi7xzJZhG5IUuxOOucW2fut7qCQ9qNWO';
 
@@ -44,7 +45,7 @@ class SubmissionForm extends React.Component<{}, State> {
 
     try {
       // make post to discord on backend after successfully stored to db
-      const responseGoAPI = await fetch(this.apiURL, {
+      const responseGoAPI = await fetch(apiURL + '/confessions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
