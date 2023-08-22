@@ -325,5 +325,5 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
-            --set-env-vars "NEXT_PUBLIC_ENV=PRODUCTION" \
-            --project=sheffessions
+            --project=sheffessions \
+            --set-env-vars=NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}

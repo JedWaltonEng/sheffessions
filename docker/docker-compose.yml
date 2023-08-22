@@ -18,12 +18,12 @@ services:
     build:
       context: ../frontend/sheffessions
       dockerfile:  Dockerfile.dev
-      args: 
-        - ENV=DEVELOPMENT
     ports:
       - '3000:3000'
     volumes:
       - ../frontend/sheffessions:/app
+    env_file:
+      - ../.env
 
   backend:
     image: sheffessions_api

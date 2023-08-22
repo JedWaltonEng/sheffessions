@@ -25,9 +25,11 @@ class SubmissionForm extends React.Component<{}, State> {
   // }
 
   // env variables for dev, staging and prod
-  // apiURL = 'http://localhost:8080/confessions';  // Change to your Go API endpoint if it's different.
-  apiURL = 'https://sheffessions-api-s3vpbhlkuq-ew.a.run.app/confessions';  // Change to your Go API endpoint if it's different.
-
+  // apiURL_development = 'http://localhost:8080/confessions'; 
+  // apiURL_production = 'https://sheffessions-api-s3vpbhlkuq-ew.a.run.app/confessions';
+  apiURL_development = 'http://localhost:8080/confessions'; 
+  // apiURL = process.env.
+  apiURL = process.env.NEXT_PUBLIC_API_URL + '/confessions';
   // env variables for dev, staging and prod
   // webhookURL = 'https://discord.com/api/webhooks/1141479151178629291/1lFcn3RBk_HizyPNkTXBc95kScxfNoroK4-vzi7xzJZhG5IUuxOOucW2fut7qCQ9qNWO';
 
@@ -53,8 +55,8 @@ class SubmissionForm extends React.Component<{}, State> {
       if (responseGoAPI.ok) {
         alert('Your Sheffession has been submitted. :)');
         this.setState({ value: '' });
-        console.log(process.env.NEXT_PUBLIC_ENV)
         console.log(process.env.NODE_ENV)
+        console.log(process.env.NEXT_PUBLIC_API_URL)
 
         // Update the cookie with the new count
         const newCount = confessionCount ? parseInt(confessionCount) + 1 : 1;
