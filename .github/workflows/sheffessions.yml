@@ -136,7 +136,7 @@ jobs:
   staging-build-sheffessions_api:
     runs-on: ubuntu-latest
     outputs:
-      image_tag_sheffessions_api_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging}}
+      image_tag_sheffessions_api_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -170,13 +170,13 @@ jobs:
           docker build \
             --build-arg MYSQL_DATABASE_STAGING=${{ secrets.MYSQL_DATABASE_STAGING }} \
             --build-arg MYSQL_ROOT_PASSWORD_STAGING=${{ secrets.MYSQL_ROOT_PASSWORD_STAGING }} \
-            -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging}} .
-          docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging}}
+            -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
+          docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
 
   production-build-sheffessions_api:
     runs-on: ubuntu-latest
     outputs:
-      image_tag_sheffessions_api: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api}}
+      image_tag_sheffessions_api: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -211,8 +211,8 @@ jobs:
           docker build \
             --build-arg MYSQL_DATABASE_PRODUCTION=${{ secrets.MYSQL_DATABASE_PRODUCTION }} \
             --build-arg MYSQL_ROOT_PASSWORD_PRODUCTION=${{ secrets.MYSQL_ROOT_PASSWORD_PRODUCTION }} \
-            -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api}} .
-          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api}}
+            -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api }} .
+          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api }}
 
   staging-build-sheffessions_fe:
     runs-on: ubuntu-latest
@@ -250,7 +250,7 @@ jobs:
         run: |
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_STAGING }} \
-            -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging}} .
+            -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }} .
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }}
 
   production-build-sheffessions_fe:
@@ -318,7 +318,7 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
-            --project=sheffessions
+            --project=sheffessions-staging
 
   production-deploy-sheffessions_api:
     needs: production-build-sheffessions_api
@@ -358,7 +358,7 @@ jobs:
       - id: 'auth'
         uses: 'google-github-actions/auth@v1'
         with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
 
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v1'
@@ -374,7 +374,7 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
-            --project=sheffessions
+            --project=sheffessions-staging
 
   production-deploy-sheffessions_fe:
     needs: production-build-sheffessions_fe
