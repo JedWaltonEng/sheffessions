@@ -134,6 +134,7 @@ jobs:
         run: pkill server
 
   staging-build-sheffessions_api:
+    needs: integration-test 
     runs-on: ubuntu-latest
     outputs:
       image_tag_sheffessions_api_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
@@ -174,6 +175,7 @@ jobs:
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
 
   production-build-sheffessions_api:
+    needs: integration-test
     runs-on: ubuntu-latest
     outputs:
       image_tag_sheffessions_api: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api }}
@@ -215,6 +217,7 @@ jobs:
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api }}
 
   staging-build-sheffessions_fe:
+    needs: integration-test
     runs-on: ubuntu-latest
     outputs:
       image_tag_sheffessions_fe_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging}}
@@ -254,6 +257,7 @@ jobs:
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }}
 
   production-build-sheffessions_fe:
+    needs: integration-test
     runs-on: ubuntu-latest
     outputs:
       image_tag_sheffessions_fe: ${{ steps.generate_tag.outputs.image_tag_sheffessions_fe}}
@@ -318,7 +322,7 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
-            --project=sheffessions-staging
+            --project=sheffessions-staging \
             --memory=128Mi \
             --cpu=1 \
             --timeout=300s \
