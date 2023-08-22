@@ -325,6 +325,5 @@ jobs:
             --region=europe-west1 \
             --platform=managed \
             --allow-unauthenticated \
-            --set-env-vars=\
-              NEXT_PUBLIC_ENV=PRODUCTION \
+            --set-env-vars "NEXT_PUBLIC_ENV=PRODUCTION" \
             --project=sheffessions
