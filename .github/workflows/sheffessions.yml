@@ -235,7 +235,7 @@ jobs:
   production-build-sheffessions_fe:
     runs-on: ubuntu-latest
     outputs:
-      timestamp2: ${{ steps.generate_tag.outputs.timestamp2 }}
+      image_tag_sheffessions_fe: ${{ steps.generate_tag.outputs.image_tag_sheffessions_fe}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -260,7 +260,7 @@ jobs:
       - name: Generate image tag
         id: generate_tag
         run: |
-          echo "::set-output name=image_tag::${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')"
+          echo "IMAGE_TAG_SHEFFESSIONS_FE=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
       # Build and push the Docker image using the generated tag
       - name: 'Build and push Docker image'
@@ -268,8 +268,8 @@ jobs:
         run: |
           docker build \
             --build-arg ENV=PRODUCTION \
-            -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.timestamp2 }} .
-          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.timestamp2 }}
+            -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe}} .
+          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe }}
 
   production-deploy-sheffessions_api:
     needs: production-build-sheffessions_api
