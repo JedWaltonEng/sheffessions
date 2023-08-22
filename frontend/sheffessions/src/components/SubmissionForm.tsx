@@ -5,8 +5,6 @@ interface State {
   value: string;
 }
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL;
-
 class SubmissionForm extends React.Component<{}, State> {
   constructor(props: {}) {
     super(props);
@@ -20,20 +18,6 @@ class SubmissionForm extends React.Component<{}, State> {
     this.setState({ value: event.target.value });
   }
 
-  // handleSubmit(event: FormEvent) {
-  //   // alert('Your Sheffession has been submitted :) ' + this.state.value);
-  //   alert('Your Sheffession has been submitted...');
-  //   event.preventDefault();
-  // }
-
-  // env variables for dev, staging and prod
-  // apiURL_development = 'http://localhost:8080/confessions'; 
-  // apiURL_production = 'https://sheffessions-api-s3vpbhlkuq-ew.a.run.app/confessions';
-  apiURL_development = 'http://localhost:8080/confessions'; 
-  apiURL = process.env.NEXT_PUBLIC_API_URL;
-  // apiURL = process.env.
-  // env variables for dev, staging and prod
-  // webhookURL = 'https://discord.com/api/webhooks/1141479151178629291/1lFcn3RBk_HizyPNkTXBc95kScxfNoroK4-vzi7xzJZhG5IUuxOOucW2fut7qCQ9qNWO';
 
   async handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -46,7 +30,7 @@ class SubmissionForm extends React.Component<{}, State> {
 
     try {
       // make post to discord on backend after successfully stored to db
-      const responseGoAPI = await fetch(apiURL + '/confessions', {
+      const responseGoAPI = await fetch(process.env.NEXT_PUBLIC_API_URL + '/confessions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -57,14 +41,12 @@ class SubmissionForm extends React.Component<{}, State> {
       if (responseGoAPI.ok) {
         alert('Your Sheffession has been submitted. :)');
         this.setState({ value: '' });
-        console.log(process.env.NODE_ENV)
-        console.log(process.env.NEXT_PUBLIC_API_URL)
 
         // Update the cookie with the new count
         const newCount = confessionCount ? parseInt(confessionCount) + 1 : 1;
         Cookies.set('confessionCount', newCount.toString(), { expires: 1 });
       } else {
-        throw new Error('Failed to send to Discord API');
+        throw new Error('uh oh spaghettios, something went wrong');
       }
     } catch (error) {
       console.error("There was an error submitting the Sheffession:", error);
@@ -89,8 +71,6 @@ class SubmissionForm extends React.Component<{}, State> {
       </form>
     );
   }
-
-
 }
 
 export default SubmissionForm;
