@@ -266,7 +266,7 @@ jobs:
         working-directory: ./frontend/sheffessions
         run: |
           docker build \
-            --build-arg NEXT_PUBLIC_ENV=PRODUCTION \
+            --build-arg ENV=PRODUCTION \
             -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.timestamp2 }} .
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.timestamp2 }}
 
