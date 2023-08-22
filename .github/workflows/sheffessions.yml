@@ -232,6 +232,45 @@ jobs:
             -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api}} .
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api}}
 
+  staging-build-sheffessions_fe:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag_sheffessions_fe_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      # Configure Docker to use gcloud command-line tool as a credential helper for Artifact Registry
+      - name: 'Configure Docker for Artifact Registry'
+        run: |
+          gcloud --quiet auth configure-docker europe-docker.pkg.dev
+
+      # Generate the image tag combining the commit hash and timestamp
+      - name: Generate image tag
+        id: generate_tag
+        run: |
+          echo "IMAGE_TAG_SHEFFESSIONS_FE_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      # Build and push the Docker image using the generated tag
+      - name: 'Build and push Docker image'
+        working-directory: ./frontend/sheffessions
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_STAGING }} \
+            -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging}} .
+          docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }}
+
   production-build-sheffessions_fe:
     runs-on: ubuntu-latest
     outputs:
@@ -299,6 +338,33 @@ jobs:
             --allow-unauthenticated \
             --project=sheffessions
 
+  staging-deploy-sheffessions_fe:
+    needs: staging-build-sheffessions_fe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      # Deploy to Cloud Run using the generated image tag
+      - name: 'Deploy to Cloud Run (API)'
+        run: |
+          gcloud run deploy sheffessions-fe-staging \
+            --image=europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ needs.staging-build-sheffessions_fe.outputs.image_tag_sheffessions_fe_staging }} \
+            --region=europe-west1 \
+            --platform=managed \
+            --allow-unauthenticated \
+            --project=sheffessions
 
   production-deploy-sheffessions_fe:
     needs: production-build-sheffessions_fe

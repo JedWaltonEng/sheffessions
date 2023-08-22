@@ -34,6 +34,8 @@ services:
       - '8080:8080'  # assuming your backend runs on port 8080
     volumes:
       - ../backend/sheffessions_api:/app
+    env_file:
+      - ../.env
 
 volumes:
   db:
