@@ -57,7 +57,6 @@ jobs:
   #   - name: Run frontend/sheffessions unit tests
   #     working-directory: ./frontend/sheffessions
   #     run: pnpm test:unit
-
   integration-test:
     needs: [
       unit-test-sheffessions_api,
