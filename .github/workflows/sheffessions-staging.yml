@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [ 
       "staging",
+      "main"
     ]
 
 jobs:
@@ -78,7 +79,7 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
 
-      # Setup MySQL database here
+      # Setup MySQL database here and run migrations against real staging db
 
       # Cache pnpm modules
       - name: Cache node modules

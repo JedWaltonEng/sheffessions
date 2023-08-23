@@ -7,125 +7,7 @@ on:
     ]
 
 jobs:
-  unit-test-sheffessions_api:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: '1.21'
-        cache: true
-        cache-dependency-path: ./backend/sheffessions_api/go.sum
-
-    - name: Fetch dependencies
-      working-directory: ./backend/sheffessions_api
-      run: |
-        go get -v ./...
-
-    - name: Run backend/sheffessions_api unit tests
-      working-directory: ./backend/sheffessions_api
-      run: go test -v *_unit_test.go
-
-  unit-test-frontend:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Install Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-
-    - name: Cache node modules
-      uses: actions/cache@v3
-      with:
-        path: ~/.pnpm-cache
-        key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.OS }}-pnpm-
-
-    - name: Install pnpm
-      run: npm install -g pnpm
-
-    - name: Install dependencies
-      working-directory: ./frontend/sheffessions
-      run: pnpm install
-    
-    - name: Run frontend/sheffessions unit tests
-      working-directory: ./frontend/sheffessions
-      run: pnpm test:unit
-
-  integration-test:
-    needs: [
-      unit-test-sheffessions_api,
-      unit-test-frontend
-    ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: '1.21'
-          cache: true
-          cache-dependency-path: ./backend/sheffessions_api/go.sum
-
-      - name: Fetch dependencies
-        working-directory: ./backend/sheffessions_api
-        run: go get -v ./...
-
-      # Setup MySQL database here
-
-      - name: Cache node modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.pnpm-cache
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Install dependencies
-        working-directory: ./frontend/sheffessions
-        run: pnpm install
-
-      - name: Build and Run sheffessions_api
-        working-directory: ./backend/sheffessions_api
-        run: |
-          go build -o server main.go
-          ./server &
-
-      - name: Wait for Backend to Start
-        run: |
-          while ! curl -s localhost:8080 > /dev/null; do
-            sleep 5
-          done
-
-      - name: Run sheffessions_api Integration Tests
-        working-directory: ./backend/sheffessions_api
-        run: go test -v *_integration_test.go
-
-      - name: Run Frontend Integration Tests
-        working-directory: ./frontend/sheffessions
-        run: |
-          pnpm test:integration
-
-      - name: Shutdown Backend
-        if: always()
-        run: pkill server
-
   production-build-sheffessions_api:
-    needs: [
-      integration-test,
-      unit-test-sheffessions_api,
-      unit-test-frontend
-    ]
     runs-on: ubuntu-latest
     outputs:
       image_tag_sheffessions_api: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api }}
@@ -163,11 +45,6 @@ jobs:
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api }}
 
   production-build-sheffessions_fe:
-    needs: [
-      integration-test,
-      unit-test-sheffessions_api,
-      unit-test-frontend
-    ]
     runs-on: ubuntu-latest
     outputs:
       image_tag_sheffessions_fe: ${{ steps.generate_tag.outputs.image_tag_sheffessions_fe}}
@@ -190,7 +67,6 @@ jobs:
         run: |
           gcloud --quiet auth configure-docker europe-docker.pkg.dev
 
-      # Generate the image tag combining the commit hash and timestamp
       - name: Generate image tag
         id: generate_tag
         run: |
@@ -206,9 +82,6 @@ jobs:
 
   production-deploy-sheffessions_api:
     needs: [
-      integration-test,
-      unit-test-sheffessions_api,
-      unit-test-frontend,
       production-build-sheffessions_api,
       production-build-sheffessions_fe
     ]
@@ -245,9 +118,6 @@ jobs:
 
   production-deploy-sheffessions_fe:
     needs: [
-      integration-test,
-      unit-test-sheffessions_api,
-      unit-test-frontend,
       production-build-sheffessions_api,
       production-build-sheffessions_fe,
       production-deploy-sheffessions_api
