@@ -41,8 +41,6 @@ jobs:
             --backup \
             --backup-start-time=04:00 \
             --require-ssl \
-            --maintenance-window-day=ANY \
-            --maintenance-window-hour=ANY \
             --no-assign-ip \
             --deletion-protection
 
