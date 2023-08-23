@@ -81,7 +81,6 @@ jobs:
 
       # Setup MySQL database here and run migrations against real staging db
 
-      # Cache pnpm modules
       - name: Cache node modules
         uses: actions/cache@v3
         with:
@@ -142,18 +141,15 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      # Configure Docker to use gcloud command-line tool as a credential helper for Artifact Registry
       - name: 'Configure Docker for Artifact Registry'
         run: |
           gcloud --quiet auth configure-docker europe-docker.pkg.dev
 
-      # Generate the image tag combining the commit hash and timestamp
       - name: Generate image tag
         id: generate_tag
         run: |
           echo "IMAGE_TAG_SHEFFESSIONS_API_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-      # Build and push the Docker image using the generated tag
       - name: 'Build and push Docker image'
         working-directory: ./backend/sheffessions_api
         run: |
@@ -162,6 +158,14 @@ jobs:
             --build-arg MYSQL_ROOT_PASSWORD_STAGING=${{ secrets.MYSQL_ROOT_PASSWORD_STAGING }} \
             -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
+
+      - name: 'Purge older Docker images'
+        run: |
+          IMAGE_LIST=$(gcloud artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging --format="value(image.digest)")
+          OLD_IMAGES=$(echo "$IMAGE_LIST" | tail -n +6)
+          for DIGEST in $OLD_IMAGES; do
+            gcloud artifacts docker images delete europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging@${DIGEST} --quiet
+          done
 
   staging-build-sheffessions_fe:
     needs: integration-test
@@ -183,18 +187,15 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      # Configure Docker to use gcloud command-line tool as a credential helper for Artifact Registry
       - name: 'Configure Docker for Artifact Registry'
         run: |
           gcloud --quiet auth configure-docker europe-docker.pkg.dev
 
-      # Generate the image tag combining the commit hash and timestamp
       - name: Generate image tag
         id: generate_tag
         run: |
           echo "IMAGE_TAG_SHEFFESSIONS_FE_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-      # Build and push the Docker image using the generated tag
       - name: 'Build and push Docker image'
         working-directory: ./frontend/sheffessions
         run: |
@@ -203,8 +204,16 @@ jobs:
             -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }} .
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }}
 
+      - name: 'Purge older Docker images'
+        run: |
+          IMAGE_LIST=$(gcloud artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging --format="value(image.digest)")
+          OLD_IMAGES=$(echo "$IMAGE_LIST" | tail -n +6)
+          for DIGEST in $OLD_IMAGES; do
+            gcloud artifacts docker images delete europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging@${DIGEST} --quiet
+          done
+
   staging-deploy-sheffessions_api:
-    needs: staging-build-sheffessions_api
+    needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -221,7 +230,6 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      # Deploy to Cloud Run using the generated image tag
       - name: 'Deploy to Cloud Run (API)'
         run: |
           gcloud run deploy sheffessions-api-staging \
@@ -236,7 +244,7 @@ jobs:
             --concurrency=80
 
   staging-deploy-sheffessions_fe:
-    needs: staging-build-sheffessions_fe
+    needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -253,7 +261,6 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      # Deploy to Cloud Run using the generated image tag
       - name: 'Deploy to Cloud Run (API)'
         run: |
           gcloud run deploy sheffessions-fe-staging \
