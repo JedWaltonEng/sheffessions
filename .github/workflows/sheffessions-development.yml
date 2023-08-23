@@ -14,6 +14,7 @@ jobs:
       unit-test-frontend
     ]
     runs-on: ubuntu-latest
+    
     # PostgreSQL service
     services:
       postgres:
@@ -45,10 +46,6 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
 
-      # Setup PostgreSQL database here
-        
-
-      # Cache pnpm modules
       - name: Cache node modules
         uses: actions/cache@v3
         with:
