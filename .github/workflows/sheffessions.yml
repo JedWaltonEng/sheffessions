@@ -3,16 +3,6 @@ name: Sheffessions pipeline
 on:
   push:
     branches: [
-      "feature/cloudrun",
-      "develop",
-      "staging",
-      "main"
-    ]
-  pull_request:
-    branches: [ 
-      "feature/cloudrun",
-      "develop",
-      "staging",
       "main"
     ]
 

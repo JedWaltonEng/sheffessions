@@ -1,11 +1,6 @@
 name: Sheffessions staging pipeline 
 
 on:
-  push:
-    branches: [
-      "staging",
-      "feature/cloudrun"
-    ]
   pull_request:
     branches: [ 
       "staging",
