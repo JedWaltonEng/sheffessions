@@ -7,7 +7,6 @@
     `$ cd docker && docker compose up`
 
 
-
 Todo:
 -----
 - Build clone of Production, for staging.
@@ -18,4 +17,3 @@ Todo:
 - Post health check with OpenAI.
 - Generate Image from chosen posts.
 - Schedule image posts & Upload image to instagram via graphql
-
