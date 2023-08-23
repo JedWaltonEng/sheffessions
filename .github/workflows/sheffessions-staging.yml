@@ -41,7 +41,7 @@ jobs:
             --backup \
             --backup-start-time=04:00 \
             --require-ssl \
-            --no-assign-ip \
+            --assign-ip \
             --deletion-protection
 
   # unit-test-sheffessions_api:
