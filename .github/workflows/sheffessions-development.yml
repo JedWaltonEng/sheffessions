@@ -67,7 +67,6 @@ jobs:
       unit-test-frontend
     ]
     runs-on: ubuntu-latest
-    # PostgreSQL service
     services:
       postgres:
         image: postgres:latest
@@ -82,6 +81,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -97,10 +97,6 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
 
-      # Setup PostgreSQL database here
-        
-
-      # Cache pnpm modules
       - name: Cache node modules
         uses: actions/cache@v3
         with:
