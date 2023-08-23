@@ -46,8 +46,10 @@ jobs:
 
       - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
         run: |
-          gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
-          gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
+          gcloud sql instances patch sheffessions-staging --no-deletion-protection
+          # gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
+          # gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
+          gcloud sql instances delete sheffessions-staging --project=sheffessions-staging --quiet
 
   # unit-test-sheffessions_api:
   #   runs-on: ubuntu-latest
