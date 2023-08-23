@@ -34,7 +34,7 @@ jobs:
             --database-version=POSTGRES_15 \
             --tier=db-f1-micro \
             --region=europe-west2 \
-            --availability-type=single-zone \
+            --availability-type=zonal \
             --storage-type=SSD \
             --storage-size=10 \
             --storage-auto-increase \
