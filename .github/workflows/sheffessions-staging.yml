@@ -159,20 +159,6 @@ jobs:
             -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
 
-      - name: Clean up old API images
-        run: |
-          IMAGE_LIST=$(gcloud artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging --format="value(image.digest)")
-
-          IMAGE_ARRAY=($IMAGE_LIST)
-          IMAGE_COUNT=${#IMAGE_ARRAY[@]}
-
-          if [[ "$IMAGE_COUNT" -gt 5 ]]; then
-            OLD_IMAGES=${IMAGE_ARRAY[@]:0:($IMAGE_COUNT-5)}
-            for DIGEST in $OLD_IMAGES; do
-              gcloud artifacts docker images delete europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging@$DIGEST --quiet --delete-tags
-            done
-          fi
-
   staging-build-sheffessions_fe:
     needs: integration-test
     runs-on: ubuntu-latest
@@ -209,20 +195,6 @@ jobs:
             --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_STAGING }} \
             -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }} .
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }}
-
-      - name: 'Clean up old images'
-        run: |
-          IMAGE_LIST=$(gcloud artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging --format="value(image.digest)")
-
-          IMAGE_ARRAY=($IMAGE_LIST)
-          IMAGE_COUNT=${#IMAGE_ARRAY[@]}
-
-          if [[ "$IMAGE_COUNT" -gt 5 ]]; then
-            OLD_IMAGES=${IMAGE_ARRAY[@]:0:($IMAGE_COUNT-5)}
-            for DIGEST in $OLD_IMAGES; do
-              gcloud artifacts docker images delete europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging@$DIGEST --quiet --delete-tags
-            done
-          fi
 
   staging-deploy-sheffessions_api:
     needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
