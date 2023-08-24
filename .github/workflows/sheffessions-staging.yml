@@ -86,10 +86,6 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      - name: 'update pw'
-        run: 
-          gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
-
       - name: 'Check and Create PostgreSQL Instance on Cloud SQL if it does not exist'
         run: |
           INSTANCE_EXISTS=$(gcloud sql instances list --filter="name:sheffessions-staging-postgresql" --format="get(name)")
@@ -110,7 +106,10 @@ jobs:
 
             gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
           else
-            echo "Instance sheffessions-staging-postgresql already exists. Skipping creation."
+            echo "Instance sheffessions-staging-postgresql already exists."
+            echo "Skipping creation." 
+            echo "Updating password to $POSTGRESQL_PASSWORD_STAGING"
+            gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
           fi
 
       # - name: 'Create PostgreSQL Instance on Cloud SQL'
