@@ -99,8 +99,10 @@ jobs:
             --require-ssl
 
       - name: 'Configure sheffessions-staging-postgresql password'
+        env:
+          POSTGRESQL_PASSWORD_STAGING: ${{ secrets.POSTGRESQL_PASSWORD_STAGING }}
         run: |
-          gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=mysecretpassword
+          gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
 
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -112,6 +114,12 @@ jobs:
       - name: Fetch dependencies
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
+
+      - name: Run sheffessions_api Integration Tests
+        working-directory: ./backend/sheffessions_api
+        run: |
+          export POSTGRESQL_URL="postgres://postgres:${POSTGRESQL_PASSWORD_STAGING}@localhost:5432/postgres?sslmode=disable"
+          go test -v *_integration_test.go
 
       - name: Cache node modules
         uses: actions/cache@v3
@@ -135,12 +143,10 @@ jobs:
         run: |
           export POSTGRESQL_URL="postgres://postgres:${POSTGRESQL_PASSWORD_STAGING}@localhost:5432/postgres?sslmode=disable"
 
-          # Rest of the operations, such as starting the Cloud SQL Proxy, building and starting the Go server
           wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
           chmod +x cloud_sql_proxy
           ./cloud_sql_proxy -instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql=tcp:5432 &
 
-          # Let's add a loop to check if the Cloud SQL Proxy is up
           echo "Waiting for Cloud SQL Proxy to be up..."
           for i in {1..30}; do
             if netstat -an | grep "5432" > /dev/null; then
@@ -155,10 +161,6 @@ jobs:
 
           sleep 10
 
-      - name: Run sheffessions_api Integration Tests
-        working-directory: ./backend/sheffessions_api
-        run: go test -v *_integration_test.go
-
       - name: Run Frontend Integration Tests
         working-directory: ./frontend/sheffessions
         run: |
@@ -168,10 +170,10 @@ jobs:
         if: always()
         run: pkill server
 
-      - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
-        run: |
-          gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
-          gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
+      # - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
+      #   run: |
+      #     gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
+      #     gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
 
   # staging-build-sheffessions_api:
   #   needs: integration-test 
