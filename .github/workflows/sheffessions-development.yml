@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Check for migration filename prefix collisions
       working-directory: ./backend/sheffessions_api
@@ -93,13 +93,15 @@ jobs:
       unit-test-frontend
     ]
     runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_URL: postgres://postgres_user:mysecretpassword@localhost:5432/devdb?sslmode=disable&search_path=public
     services:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres_user
+          POSTGRES_PASSWORD: mysecretpassword
+          POSTGRES_DB: devdb
         ports:
           - 5432:5432
         options: >-
@@ -137,6 +139,16 @@ jobs:
       - name: Install dependencies
         working-directory: ./frontend/sheffessions
         run: pnpm install
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -U postgres_user; then
+              break
+            fi
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 1
+          done
 
       - name: Build and Run sheffessions_api
         working-directory: ./backend/sheffessions_api
