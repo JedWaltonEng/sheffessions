@@ -13,12 +13,12 @@ on:
 jobs:
   check-migrations:
     runs-on: ubuntu-latest
-    working-directory: ./backend/sheffessions_api
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
 
     - name: Check for migration filename prefix collisions
+      working-directory: ./backend/sheffessions_api
       run: |
         # Check out PR changes
         git fetch origin $GITHUB_REF
