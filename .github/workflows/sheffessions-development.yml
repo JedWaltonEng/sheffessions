@@ -93,11 +93,13 @@ jobs:
       unit-test-frontend
     ]
     runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_URL: postgres://postgres:mysecretpassword@db:5432/devdb?sslmode=disable&search_path=public
     services:
       postgres:
         image: postgres:latest
         env:
-          POSTGRESQL_URL: postgres://postgres:mysecretpassword@db:5432/devdb?sslmode=disable&search_path=public
+          # POSTGRESQL_URL: postgres://postgres:mysecretpassword@db:5432/devdb?sslmode=disable&search_path=public
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: mysecretpassword
           POSTGRES_DB: devdb
