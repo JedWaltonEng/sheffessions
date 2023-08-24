@@ -128,15 +128,18 @@ jobs:
         working-directory: ./frontend/sheffessions
         run: pnpm install
 
-      - name: 'Install, Start Cloud SQL Proxy, and Run sheffessions_api'
+      - name: 'Construct POSTGRESQL_URL and Run sheffessions_api'
         working-directory: ./backend/sheffessions_api
         env:
-          POSTGRESQL_URL: ${{ secrets.POSTGRESQL_URL }}
+          POSTGRESQL_PASSWORD_STAGING: ${{ secrets.POSTGRESQL_PASSWORD_STAGING }}
         run: |
+          export POSTGRESQL_URL="postgres://postgres:${POSTGRESQL_PASSWORD_STAGING}@localhost:5432/postgres?sslmode=disable"
+
+          # Rest of the operations, such as starting the Cloud SQL Proxy, building and starting the Go server
           wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
           chmod +x cloud_sql_proxy
           ./cloud_sql_proxy -instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql=tcp:5432 &
-          
+
           # Let's add a loop to check if the Cloud SQL Proxy is up
           echo "Waiting for Cloud SQL Proxy to be up..."
           for i in {1..30}; do
