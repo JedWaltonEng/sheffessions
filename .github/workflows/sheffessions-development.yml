@@ -27,7 +27,7 @@ jobs:
         pr_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
 
         # Check out develop branch
-        git checkout develop
+        git checkout development
 
         # Compare migration prefixes
         for prefix in $pr_migrations_prefixes; do
