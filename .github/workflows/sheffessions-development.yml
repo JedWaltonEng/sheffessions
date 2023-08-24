@@ -5,10 +5,6 @@ on:
     branches: [
       "development",
     ]
-  # push:
-  #   branches: [
-  #     "feature/databases"
-  #   ]
 
 jobs:
   check-migrations:
@@ -22,13 +18,10 @@ jobs:
       run: |
         # Explicitly fetch the development branch
         git fetch origin development
-        
         # Get the list of all migration prefixes in the PR (i.e., current branch)
         pr_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
-        
         # Get the list of all migration prefixes in development
         development_migrations_prefixes=$(git ls-tree -r origin/development --name-only db/migrations | cut -d'_' -f1 | sort | uniq)
-        
         # Compare the migration prefixes from your PR with those in development
         for prefix in $pr_migrations_prefixes; do
           if echo "$development_migrations_prefixes" | grep -q "^${prefix}$"; then
