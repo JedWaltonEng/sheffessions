@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Check for migration filename prefix collisions
       working-directory: ./backend/sheffessions_api
@@ -97,9 +97,7 @@ jobs:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: test_db
+          POSTGRESQL_URL: postgres://postgres:mysecretpassword@db:5432/devdb?sslmode=disable&search_path=public
         ports:
           - 5432:5432
         options: >-
