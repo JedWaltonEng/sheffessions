@@ -147,22 +147,22 @@ jobs:
           wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
           chmod +x cloud_sql_proxy
           ./cloud_sql_proxy -instances=sheffessions-staging:sheffessions-staging-postgresql=tcp:5432 &
+          
+          # Let's add a loop to check if the Cloud SQL Proxy is up
+          echo "Waiting for Cloud SQL Proxy to be up..."
+          for i in {1..30}; do
+            if netstat -an | grep "5432" > /dev/null; then
+              echo "Cloud SQL Proxy started!"
+              break
+            fi
+            sleep 1
+          done
 
-          # Wait for the proxy to start up
-          sleep 10
-
-          # Assuming you're in the right directory already
           go build -o server main.go
           ./server &
 
-          # Add some delay to ensure the server is up before proceeding (or use your curl loop check)
           sleep 10
 
-      - name: Wait for Backend to Start
-        run: |
-          while ! curl -s localhost:8080 > /dev/null; do
-            sleep 5
-          done
 
       - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
