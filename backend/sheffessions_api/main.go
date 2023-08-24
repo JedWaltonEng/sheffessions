@@ -15,7 +15,10 @@ var db *sql.DB
 
 func initDB() {
 	var err error
-	connectionString := os.Getenv("POSTGRESQL_URL") // assuming you have the POSTGRESQL_URL environment variable set
+	connectionString := os.Getenv("POSTGRESQL_URL")
+	if connectionString == "" {
+		log.Fatal("POSTGRESQL_URL environment variable is not set")
+	}
 	db, err = sql.Open("postgres", connectionString)
 	if err != nil {
 		log.Fatal(err)
