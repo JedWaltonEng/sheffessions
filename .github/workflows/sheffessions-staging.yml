@@ -112,6 +112,12 @@ jobs:
             gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
           fi
 
+      - name: 'Install Migrate CLI'
+        run: curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz && mv migrate.linux-amd64 /usr/local/bin/migrate
+
+      - name: 'Migrate up'
+        run: migrate -database ${POSTGRESQL_URL} -path db/migrations up
+
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -208,7 +214,7 @@ jobs:
           docker build \
             -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
-  #
+
   staging-build-sheffessions_fe:
     needs: integration-test
     runs-on: ubuntu-latest
@@ -284,7 +290,6 @@ jobs:
   staging-deploy-sheffessions_fe:
     needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
     runs-on: ubuntu-latest
-    # We Pass env variables to nextjs in the build step.
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
