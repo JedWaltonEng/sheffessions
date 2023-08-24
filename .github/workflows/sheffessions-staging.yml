@@ -142,6 +142,7 @@ jobs:
       #     ./server &
 
       - name: 'Install, Start Cloud SQL Proxy, and Run sheffessions_api'
+        working-directory: ./backend/sheffessions_api
         run: |
           wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
           chmod +x cloud_sql_proxy
