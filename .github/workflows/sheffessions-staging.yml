@@ -86,21 +86,44 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      - name: 'Create PostgreSQL Instance on Cloud SQL'
+      - name: 'Check and Create PostgreSQL Instance on Cloud SQL if it does not exist'
         run: |
-          gcloud sql instances create sheffessions-staging-postgresql \
-            --project=sheffessions-staging \
-            --database-version=POSTGRES_15 \
-            --tier=db-f1-micro \
-            --region=europe-west2 \
-            --availability-type=zonal \
-            --storage-type=SSD \
-            --storage-size=10 \
-            --storage-auto-increase \
-            --backup \
-            --backup-start-time=04:00 \
-            --require-ssl
-          gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
+          INSTANCE_EXISTS=$(gcloud sql instances list --filter="name:sheffessions-staging-postgresql" --format="get(name)")
+
+          if [[ -z "$INSTANCE_EXISTS" ]]; then
+            gcloud sql instances create sheffessions-staging-postgresql \
+              --project=sheffessions-staging \
+              --database-version=POSTGRES_15 \
+              --tier=db-f1-micro \
+              --region=europe-west2 \
+              --availability-type=zonal \
+              --storage-type=SSD \
+              --storage-size=10 \
+              --storage-auto-increase \
+              --backup \
+              --backup-start-time=04:00 \
+              --require-ssl
+
+            gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
+          else
+            echo "Instance sheffessions-staging-postgresql already exists. Skipping creation."
+          fi
+
+      # - name: 'Create PostgreSQL Instance on Cloud SQL'
+      #   run: |
+      #     gcloud sql instances create sheffessions-staging-postgresql \
+      #       --project=sheffessions-staging \
+      #       --database-version=POSTGRES_15 \
+      #       --tier=db-f1-micro \
+      #       --region=europe-west2 \
+      #       --availability-type=zonal \
+      #       --storage-type=SSD \
+      #       --storage-size=10 \
+      #       --storage-auto-increase \
+      #       --backup \
+      #       --backup-start-time=04:00 \
+      #       --require-ssl
+      #     gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
 
       - name: Setup Go
         uses: actions/setup-go@v3
