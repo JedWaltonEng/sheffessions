@@ -45,8 +45,14 @@ jobs:
       run: |
         # Explicitly fetch the development branch
         git fetch origin development
+        # Check if branches have a common base
+        merge_base=$(git merge-base HEAD origin/development)
+        if [ -z "$merge_base" ]; then
+          echo "The branches have unrelated histories. This can cause issues during merge."
+          exit 1
+        fi
         # Try merging development into the current branch (simulate what will happen post-merge)
-        git merge origin/development --no-commit --no-ff
+        git merge origin/development --no-commit --no-ff --allow-unrelated-histories
         # Get the list of all migration prefixes post-merge
         merged_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
         # Check for duplicates (collisions) within the merged list itself
@@ -58,7 +64,6 @@ jobs:
           echo "Please update your migration script to avoid conflicts post-merge."
           exit 1
         fi
-
         echo "No migration prefix collisions detected post-merge."
 
   unit-test-sheffessions_api:
