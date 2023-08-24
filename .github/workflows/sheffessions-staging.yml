@@ -97,8 +97,14 @@ jobs:
             --backup \
             --backup-start-time=04:00 \
             --require-ssl \
-            --assign-ip \
-            --deletion-protection
+            --assign-ip
+
+      - name: 'Install and Start Cloud SQL Proxy'
+        run: |
+          wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+          chmod +x cloud_sql_proxy
+          ./cloud_sql_proxy -instances=sheffessions-staging:sheffessions-staging-postgresql=tcp:5432 &
+          sleep 10 # Give the proxy a moment to establish a connection
 
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -156,141 +162,141 @@ jobs:
           gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
           gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
 
-  staging-build-sheffessions_api:
-    needs: integration-test 
-    runs-on: ubuntu-latest
-    outputs:
-      image_tag_sheffessions_api_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v1'
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
-
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v1'
-
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
-
-      - name: 'Configure Docker for Artifact Registry'
-        run: |
-          gcloud --quiet auth configure-docker europe-docker.pkg.dev
-
-      - name: Generate image tag
-        id: generate_tag
-        run: |
-          echo "IMAGE_TAG_SHEFFESSIONS_API_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-
-      - name: 'Build and push Docker image'
-        working-directory: ./backend/sheffessions_api
-        run: |
-          docker build \
-            --build-arg MYSQL_DATABASE_STAGING=${{ secrets.MYSQL_DATABASE_STAGING }} \
-            --build-arg MYSQL_ROOT_PASSWORD_STAGING=${{ secrets.MYSQL_ROOT_PASSWORD_STAGING }} \
-            -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
-          docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
-
-  staging-build-sheffessions_fe:
-    needs: integration-test
-    runs-on: ubuntu-latest
-    outputs:
-      image_tag_sheffessions_fe_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging}}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v1'
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
-
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v1'
-
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
-
-      - name: 'Configure Docker for Artifact Registry'
-        run: |
-          gcloud --quiet auth configure-docker europe-docker.pkg.dev
-
-      - name: Generate image tag
-        id: generate_tag
-        run: |
-          echo "IMAGE_TAG_SHEFFESSIONS_FE_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-
-      - name: 'Build and push Docker image'
-        working-directory: ./frontend/sheffessions
-        run: |
-          docker build \
-            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_STAGING }} \
-            -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }} .
-          docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }}
-
-  staging-deploy-sheffessions_api:
-    needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v1'
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
-
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v1'
-
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
-
-      - name: 'Deploy to Cloud Run (API)'
-        run: |
-          gcloud run deploy sheffessions-api-staging \
-            --image=europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ needs.staging-build-sheffessions_api.outputs.image_tag_sheffessions_api_staging }} \
-            --region=europe-west1 \
-            --platform=managed \
-            --allow-unauthenticated \
-            --project=sheffessions-staging \
-            --memory=128Mi \
-            --cpu=1 \
-            --timeout=300s \
-            --concurrency=80
-
-  staging-deploy-sheffessions_fe:
-    needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v1'
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
-
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v1'
-
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
-
-      - name: 'Deploy to Cloud Run (API)'
-        run: |
-          gcloud run deploy sheffessions-fe-staging \
-            --image=europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ needs.staging-build-sheffessions_fe.outputs.image_tag_sheffessions_fe_staging }} \
-            --region=europe-west1 \
-            --platform=managed \
-            --allow-unauthenticated \
-            --project=sheffessions-staging \
-            --memory=512Mi \
-            --cpu=1 \
-            --timeout=300s \
-            --concurrency=80 \
-            --min-instances=0 \
-            --max-instances=10
+  # staging-build-sheffessions_api:
+  #   needs: integration-test 
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     image_tag_sheffessions_api_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #
+  #     - id: 'auth'
+  #       uses: 'google-github-actions/auth@v1'
+  #       with:
+  #         credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
+  #
+  #     - name: 'Set up Cloud SDK'
+  #       uses: 'google-github-actions/setup-gcloud@v1'
+  #
+  #     - name: 'Use gcloud CLI'
+  #       run: 'gcloud info'
+  #
+  #     - name: 'Configure Docker for Artifact Registry'
+  #       run: |
+  #         gcloud --quiet auth configure-docker europe-docker.pkg.dev
+  #
+  #     - name: Generate image tag
+  #       id: generate_tag
+  #       run: |
+  #         echo "IMAGE_TAG_SHEFFESSIONS_API_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+  #
+  #     - name: 'Build and push Docker image'
+  #       working-directory: ./backend/sheffessions_api
+  #       run: |
+  #         docker build \
+  #           --build-arg MYSQL_DATABASE_STAGING=${{ secrets.MYSQL_DATABASE_STAGING }} \
+  #           --build-arg MYSQL_ROOT_PASSWORD_STAGING=${{ secrets.MYSQL_ROOT_PASSWORD_STAGING }} \
+  #           -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
+  #         docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
+  #
+  # staging-build-sheffessions_fe:
+  #   needs: integration-test
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     image_tag_sheffessions_fe_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging}}
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #
+  #     - id: 'auth'
+  #       uses: 'google-github-actions/auth@v1'
+  #       with:
+  #         credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
+  #
+  #     - name: 'Set up Cloud SDK'
+  #       uses: 'google-github-actions/setup-gcloud@v1'
+  #
+  #     - name: 'Use gcloud CLI'
+  #       run: 'gcloud info'
+  #
+  #     - name: 'Configure Docker for Artifact Registry'
+  #       run: |
+  #         gcloud --quiet auth configure-docker europe-docker.pkg.dev
+  #
+  #     - name: Generate image tag
+  #       id: generate_tag
+  #       run: |
+  #         echo "IMAGE_TAG_SHEFFESSIONS_FE_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+  #
+  #     - name: 'Build and push Docker image'
+  #       working-directory: ./frontend/sheffessions
+  #       run: |
+  #         docker build \
+  #           --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_STAGING }} \
+  #           -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }} .
+  #         docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }}
+  #
+  # staging-deploy-sheffessions_api:
+  #   needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #
+  #     - id: 'auth'
+  #       uses: 'google-github-actions/auth@v1'
+  #       with:
+  #         credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
+  #
+  #     - name: 'Set up Cloud SDK'
+  #       uses: 'google-github-actions/setup-gcloud@v1'
+  #
+  #     - name: 'Use gcloud CLI'
+  #       run: 'gcloud info'
+  #
+  #     - name: 'Deploy to Cloud Run (API)'
+  #       run: |
+  #         gcloud run deploy sheffessions-api-staging \
+  #           --image=europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ needs.staging-build-sheffessions_api.outputs.image_tag_sheffessions_api_staging }} \
+  #           --region=europe-west1 \
+  #           --platform=managed \
+  #           --allow-unauthenticated \
+  #           --project=sheffessions-staging \
+  #           --memory=128Mi \
+  #           --cpu=1 \
+  #           --timeout=300s \
+  #           --concurrency=80
+  #
+  # staging-deploy-sheffessions_fe:
+  #   needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #
+  #     - id: 'auth'
+  #       uses: 'google-github-actions/auth@v1'
+  #       with:
+  #         credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
+  #
+  #     - name: 'Set up Cloud SDK'
+  #       uses: 'google-github-actions/setup-gcloud@v1'
+  #
+  #     - name: 'Use gcloud CLI'
+  #       run: 'gcloud info'
+  #
+  #     - name: 'Deploy to Cloud Run (API)'
+  #       run: |
+  #         gcloud run deploy sheffessions-fe-staging \
+  #           --image=europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ needs.staging-build-sheffessions_fe.outputs.image_tag_sheffessions_fe_staging }} \
+  #           --region=europe-west1 \
+  #           --platform=managed \
+  #           --allow-unauthenticated \
+  #           --project=sheffessions-staging \
+  #           --memory=512Mi \
+  #           --cpu=1 \
+  #           --timeout=300s \
+  #           --concurrency=80 \
+  #           --min-instances=0 \
+  #           --max-instances=10
