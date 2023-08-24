@@ -98,6 +98,9 @@ jobs:
         image: postgres:latest
         env:
           POSTGRESQL_URL: postgres://postgres:mysecretpassword@db:5432/devdb?sslmode=disable&search_path=public
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: mysecretpassword
+          POSTGRES_DB: devdb
         ports:
           - 5432:5432
         options: >-
