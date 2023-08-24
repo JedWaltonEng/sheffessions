@@ -146,7 +146,7 @@ jobs:
         run: |
           wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
           chmod +x cloud_sql_proxy
-          ./cloud_sql_proxy -instances=sheffessions-staging:sheffessions-staging-postgresql=tcp:5432 &
+          ./cloud_sql_proxy -instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql=tcp:5432 &
           
           # Let's add a loop to check if the Cloud SQL Proxy is up
           echo "Waiting for Cloud SQL Proxy to be up..."
@@ -162,7 +162,6 @@ jobs:
           ./server &
 
           sleep 10
-
 
       - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
