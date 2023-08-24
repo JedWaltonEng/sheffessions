@@ -20,26 +20,20 @@ jobs:
     - name: Check for migration filename prefix collisions
       working-directory: ./backend/sheffessions_api
       run: |
-        # Get the SHA for the merge base with development
-        merge_base=$(git merge-base HEAD origin/development)
-
-        # Store list of migration prefixes already in development before this PR
-        existing_migrations_prefixes=$(git ls-tree -r $merge_base --name-only db/migrations | cut -d'_' -f1 | sort | uniq)
-
-        # Store list of all migration prefixes in the PR
+        # Explicitly fetch the development branch
+        git fetch origin development
+        
+        # Get the list of all migration prefixes in the PR (i.e., current branch)
         pr_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
-
-        # Get only new migrations introduced in the PR
-        new_migrations=$(comm -13 <(echo "$existing_migrations_prefixes") <(echo "$pr_migrations_prefixes"))
-
-        # Fetch and checkout the development branch
-        git fetch origin development:development
-        git checkout development
-
-        # Compare new migration prefixes with all in development
-        for prefix in $new_migrations; do
-          if ls db/migrations | grep -q "^${prefix}_"; then
+        
+        # Get the list of all migration prefixes in development
+        development_migrations_prefixes=$(git ls-tree -r origin/development --name-only db/migrations | cut -d'_' -f1 | sort | uniq)
+        
+        # Compare the migration prefixes from your PR with those in development
+        for prefix in $pr_migrations_prefixes; do
+          if echo "$development_migrations_prefixes" | grep -q "^${prefix}$"; then
             echo "Collision detected for migration prefix: $prefix"
+            echo "Please update your migration script to avoid conflicts with the development branch."
             exit 1
           fi
         done
