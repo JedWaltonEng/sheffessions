@@ -20,14 +20,11 @@ jobs:
     - name: Check for migration filename prefix collisions
       working-directory: ./backend/sheffessions_api
       run: |
-        # Check out PR changes
-        git fetch origin $GITHUB_REF
-        git checkout FETCH_HEAD
-
         # Store list of migration prefixes in PR
         pr_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
 
-        # Check out develop branch
+        # Switch to development branch
+        git fetch origin development:development
         git checkout development
 
         # Compare migration prefixes
