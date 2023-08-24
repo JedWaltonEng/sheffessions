@@ -83,19 +83,19 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      - name: 'Create PostgreSQL Instance on Cloud SQL'
-        run: |
-          gcloud sql instances create sheffessions-staging-postgresql \
-            --project=sheffessions-staging \
-            --database-version=POSTGRES_15 \
-            --tier=db-f1-micro \
-            --region=europe-west2 \
-            --availability-type=zonal \
-            --storage-type=SSD \
-            --storage-size=10 \
-            --storage-auto-increase \
-            --backup \
-            --backup-start-time=04:00
+      # - name: 'Create PostgreSQL Instance on Cloud SQL'
+      #   run: |
+      #     gcloud sql instances create sheffessions-staging-postgresql \
+      #       --project=sheffessions-staging \
+      #       --database-version=POSTGRES_15 \
+      #       --tier=db-f1-micro \
+      #       --region=europe-west2 \
+      #       --availability-type=zonal \
+      #       --storage-type=SSD \
+      #       --storage-size=10 \
+      #       --storage-auto-increase \
+      #       --backup \
+      #       --backup-start-time=04:00
 
       # - name: 'Install and Start Cloud SQL Proxy'
       #   run: |
@@ -157,10 +157,10 @@ jobs:
             sleep 1
           done
 
+          sleep 10
+          
           go build -o server main.go
           ./server &
-
-          sleep 10
 
       - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
