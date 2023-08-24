@@ -20,17 +20,20 @@ jobs:
     - name: Check for migration filename prefix collisions
       working-directory: ./backend/sheffessions_api
       run: |
-        # Store list of migration prefixes in PR
+        # Explicitly fetch the development branch
+        git fetch origin development
+        
+        # Get the list of all migration prefixes in the PR (i.e., current branch)
         pr_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
-
-        # Switch to development branch
-        git fetch origin development:development
-        git checkout development
-
-        # Compare migration prefixes
+        
+        # Get the list of all migration prefixes in development
+        development_migrations_prefixes=$(git ls-tree -r origin/development --name-only db/migrations | cut -d'_' -f1 | sort | uniq)
+        
+        # Compare the migration prefixes from your PR with those in development
         for prefix in $pr_migrations_prefixes; do
-          if ls db/migrations | grep -q "^${prefix}_"; then
+          if echo "$development_migrations_prefixes" | grep -q "^${prefix}$"; then
             echo "Collision detected for migration prefix: $prefix"
+            echo "Please update your migration script to avoid conflicts with the development branch."
             exit 1
           fi
         done
