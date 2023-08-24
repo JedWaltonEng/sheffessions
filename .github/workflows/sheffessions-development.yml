@@ -33,33 +33,33 @@ jobs:
 
         echo "No migration prefix collisions detected."
 
-  - name: Check for migration filename prefix collisions within the same commit
-    working-directory: ./backend/sheffessions_api
-    run: |
-      # Step 1: Extract all prefixes for up and down migrations
-      up_migrations=$(ls db/migrations | grep ".up.sql" | cut -d'_' -f1 | sort)
-      down_migrations=$(ls db/migrations | grep ".down.sql" | cut -d'_' -f1 | sort)
+    - name: Check for migration filename prefix collisions within the same commit
+      working-directory: ./backend/sheffessions_api
+      run: |
+        # Step 1: Extract all prefixes for up and down migrations
+        up_migrations=$(ls db/migrations | grep ".up.sql" | cut -d'_' -f1 | sort)
+        down_migrations=$(ls db/migrations | grep ".down.sql" | cut -d'_' -f1 | sort)
 
-      # Step 2: Ensure matching pairs for every up migration
-      for prefix in $up_migrations; do
-        if ! echo "$down_migrations" | grep -q "^${prefix}$"; then
-          echo "Missing .down.sql migration for prefix: $prefix"
-          exit 1
-        fi
-      done
+        # Step 2: Ensure matching pairs for every up migration
+        for prefix in $up_migrations; do
+          if ! echo "$down_migrations" | grep -q "^${prefix}$"; then
+            echo "Missing .down.sql migration for prefix: $prefix"
+            exit 1
+          fi
+        done
 
-      # Step 3: Check for any true duplicates
-      all_migrations=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
-      for prefix in $all_migrations; do
-        count=$(ls db/migrations | grep "^${prefix}_" | wc -l)
-        if [ "$count" -gt 2 ]; then
-          echo "Collisions detected for migration prefix: $prefix"
-          echo "More than one set of .up.sql and .down.sql files share the same prefix within the same commit."
-          exit 1
-        fi
-      done
+        # Step 3: Check for any true duplicates
+        all_migrations=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
+        for prefix in $all_migrations; do
+          count=$(ls db/migrations | grep "^${prefix}_" | wc -l)
+          if [ "$count" -gt 2 ]; then
+            echo "Collisions detected for migration prefix: $prefix"
+            echo "More than one set of .up.sql and .down.sql files share the same prefix within the same commit."
+            exit 1
+          fi
+        done
 
-      echo "No migration prefix collisions detected within the same commit."
+        echo "No migration prefix collisions detected within the same commit."
 
 
   check-migrations-on-merge:
