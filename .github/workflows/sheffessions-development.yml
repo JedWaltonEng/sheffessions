@@ -13,7 +13,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Check for migration filename prefix collisions
+    - name: Check for migration filename prefix collisions against development
       working-directory: ./backend/sheffessions_api
       run: |
         # Explicitly fetch the development branch
@@ -32,6 +32,21 @@ jobs:
         done
 
         echo "No migration prefix collisions detected."
+
+    - name: Check for migration filename prefix collisions within the same commit
+      working-directory: ./backend/sheffessions_api
+      run: |
+        # Get the list of all migration prefixes in the current commit
+        current_commit_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort)
+        duplicates=$(echo "$current_commit_migrations_prefixes" | uniq -d)
+        # If there are duplicates, flag them
+        if [[ ! -z "$duplicates" ]]; then
+          echo "Collisions detected for migration prefixes within the same commit:"
+          echo "$duplicates"
+          echo "Please update your migration filenames to avoid conflicts within the same commit."
+          exit 1
+        fi
+        echo "No migration prefix collisions detected within the same commit."
 
 
   check-migrations-on-merge:
