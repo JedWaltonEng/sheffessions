@@ -94,7 +94,7 @@ jobs:
     # ]
     runs-on: ubuntu-latest
     env:
-      POSTGRESQL_URL: postgres://postgres_user:mysecretpassword@postgres:5432/devdb?sslmode=disable&search_path=public
+      POSTGRESQL_URL: postgres://postgres_user:mysecretpassword@localhost:5432/devdb?sslmode=disable&search_path=public
     services:
       postgres:
         image: postgres:latest
