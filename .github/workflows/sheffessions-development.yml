@@ -13,6 +13,7 @@ on:
 jobs:
   check-migrations:
     runs-on: ubuntu-latest
+    working-directory: ./backend/sheffessions_api
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
