@@ -72,6 +72,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
       - name: 'Create PostgreSQL Instance on Cloud SQL'
         run: |
           gcloud sql instances create sheffessions-staging-postgresql \
@@ -249,8 +260,7 @@ jobs:
             --memory=128Mi \
             --cpu=1 \
             --timeout=300s \
-            --concurrency=80 \
-            --set-env-vars POSTGRESQL_URL=${{ env.POSTGRESQL_URL_STAGING }}
+            --concurrency=80
 
   staging-deploy-sheffessions_fe:
     needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
