@@ -6,67 +6,111 @@ on:
       "staging",
       "main"
     ]
+  # push:
+  #   branches: [
+  #     "feature/databases"
+  #   ]
 
 jobs:
-  unit-test-sheffessions_api:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: '1.21'
-        cache: true
-        cache-dependency-path: ./backend/sheffessions_api/go.sum
-
-    - name: Fetch dependencies
-      working-directory: ./backend/sheffessions_api
-      run: |
-        go get -v ./...
-
-    - name: Run backend/sheffessions_api unit tests
-      working-directory: ./backend/sheffessions_api
-      run: go test -v *_unit_test.go
-
-  unit-test-frontend:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Install Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-
-    - name: Cache node modules
-      uses: actions/cache@v3
-      with:
-        path: ~/.pnpm-cache
-        key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.OS }}-pnpm-
-
-    - name: Install pnpm
-      run: npm install -g pnpm
-
-    - name: Install dependencies
-      working-directory: ./frontend/sheffessions
-      run: pnpm install
-    
-    - name: Run frontend/sheffessions unit tests
-      working-directory: ./frontend/sheffessions
-      run: pnpm test:unit
+  # unit-test-sheffessions_api:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #
+  #   - name: Set up Go
+  #     uses: actions/setup-go@v3
+  #     with:
+  #       go-version: '1.21'
+  #       cache: true
+  #       cache-dependency-path: ./backend/sheffessions_api/go.sum
+  #
+  #   - name: Fetch dependencies
+  #     working-directory: ./backend/sheffessions_api
+  #     run: |
+  #       go get -v ./...
+  #
+  #   - name: Run backend/sheffessions_api unit tests
+  #     working-directory: ./backend/sheffessions_api
+  #     run: go test -v *_unit_test.go
+  #
+  # unit-test-frontend:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   
+  #   - name: Install Node.js
+  #     uses: actions/setup-node@v3
+  #     with:
+  #       node-version: '18'
+  #
+  #   - name: Cache node modules
+  #     uses: actions/cache@v3
+  #     with:
+  #       path: ~/.pnpm-cache
+  #       key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+  #       restore-keys: |
+  #         ${{ runner.OS }}-pnpm-
+  #
+  #   - name: Install pnpm
+  #     run: npm install -g pnpm
+  #
+  #   - name: Install dependencies
+  #     working-directory: ./frontend/sheffessions
+  #     run: pnpm install
+  #   
+  #   - name: Run frontend/sheffessions unit tests
+  #     working-directory: ./frontend/sheffessions
+  #     run: pnpm test:unit
 
   integration-test:
-    needs: [
-      unit-test-sheffessions_api,
-      unit-test-frontend
-    ]
+    # needs: [
+    #   unit-test-sheffessions_api,
+    #   unit-test-frontend
+    # ]
     runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_PASSWORD_STAGING: ${{ secrets.POSTGRESQL_PASSWORD_STAGING }}
+      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_STAGING }}@localhost:5432/postgres?sslmode=disable&search_path=public
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      - name: 'Check and Create PostgreSQL Instance on Cloud SQL if it does not exist'
+        run: |
+          INSTANCE_EXISTS=$(gcloud sql instances list --filter="name:sheffessions-staging-postgresql" --format="get(name)")
+
+          if [[ -z "$INSTANCE_EXISTS" ]]; then
+            gcloud sql instances create sheffessions-staging-postgresql \
+              --project=sheffessions-staging \
+              --database-version=POSTGRES_15 \
+              --tier=db-f1-micro \
+              --region=europe-west2 \
+              --availability-type=zonal \
+              --storage-type=SSD \
+              --storage-size=10 \
+              --storage-auto-increase \
+              --backup \
+              --backup-start-time=04:00 \
+              --require-ssl
+
+            gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
+          else
+            echo "Instance sheffessions-staging-postgresql already exists."
+            echo "Skipping creation." 
+            echo "Updating password to POSTGRESQL_PASSWORD_STAGING"
+            gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
+          fi
 
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -78,8 +122,6 @@ jobs:
       - name: Fetch dependencies
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
-
-      # Setup MySQL database here and run migrations against real staging db
 
       - name: Cache node modules
         uses: actions/cache@v3
@@ -96,21 +138,38 @@ jobs:
         working-directory: ./frontend/sheffessions
         run: pnpm install
 
-      - name: Build and Run sheffessions_api
+      - name: 'Construct POSTGRESQL_URL and Run sheffessions_api'
         working-directory: ./backend/sheffessions_api
         run: |
+          wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+          chmod +x cloud_sql_proxy
+          ./cloud_sql_proxy -instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql=tcp:5432 &
+
+          echo "Waiting for Cloud SQL Proxy to be up..."
+          for i in {1..30}; do
+            if netstat -an | grep "5432" > /dev/null; then
+              echo "Cloud SQL Proxy started!"
+              break
+            fi
+            sleep 1
+          done
+
           go build -o server main.go
           ./server &
 
-      - name: Wait for Backend to Start
-        run: |
-          while ! curl -s localhost:8080 > /dev/null; do
-            sleep 5
-          done
+          sleep 10
+
+      - name: 'Install Migrate CLI'
+        run: curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz && mv migrate.linux-amd64 /usr/local/bin/migrate
+
+      - name: 'Run Migrations'
+        working-directory: ./backend/sheffessions_api
+        run: migrate -database ${POSTGRESQL_URL} -path db/migrations up
 
       - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
-        run: go test -v *_integration_test.go
+        run: |
+          go test -v *_integration_test.go
 
       - name: Run Frontend Integration Tests
         working-directory: ./frontend/sheffessions
@@ -154,8 +213,6 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: |
           docker build \
-            --build-arg MYSQL_DATABASE_STAGING=${{ secrets.MYSQL_DATABASE_STAGING }} \
-            --build-arg MYSQL_ROOT_PASSWORD_STAGING=${{ secrets.MYSQL_ROOT_PASSWORD_STAGING }} \
             -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
 
@@ -199,6 +256,8 @@ jobs:
   staging-deploy-sheffessions_api:
     needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
     runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_STAGING }}@/postgres?host=/cloudsql/sheffessions-staging:europe-west2:sheffessions-staging-postgresql&sslmode=disable&search_path=public
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -225,8 +284,10 @@ jobs:
             --memory=128Mi \
             --cpu=1 \
             --timeout=300s \
-            --concurrency=80
-
+            --concurrency=80 \
+            --add-cloudsql-instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql \
+            --set-env-vars=POSTGRESQL_URL=${POSTGRESQL_URL}
+  
   staging-deploy-sheffessions_fe:
     needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
     runs-on: ubuntu-latest

@@ -5,8 +5,38 @@ on:
     branches: [
       "development",
     ]
+  # push:
+  #   branches: [
+  #     "feature/databases"
+  #   ]
 
 jobs:
+  check-migrations:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Check for migration filename prefix collisions
+      working-directory: ./backend/sheffessions_api
+      run: |
+        # Store list of migration prefixes in PR
+        pr_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
+
+        # Switch to development branch
+        git fetch origin development:development
+        git checkout development
+
+        # Compare migration prefixes
+        for prefix in $pr_migrations_prefixes; do
+          if ls db/migrations | grep -q "^${prefix}_"; then
+            echo "Collision detected for migration prefix: $prefix"
+            exit 1
+          fi
+        done
+
+        echo "No migration prefix collisions detected."
+
   unit-test-sheffessions_api:
     runs-on: ubuntu-latest
     steps:
@@ -63,6 +93,23 @@ jobs:
       unit-test-frontend
     ]
     runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_URL: postgres://postgres_user:mysecretpassword@localhost:5432/devdb?sslmode=disable&search_path=public
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres_user
+          POSTGRES_PASSWORD: mysecretpassword
+          POSTGRES_DB: devdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -78,9 +125,6 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
 
-      # Setup MySQL database here
-
-      # Cache pnpm modules
       - name: Cache node modules
         uses: actions/cache@v3
         with:
@@ -95,6 +139,16 @@ jobs:
       - name: Install dependencies
         working-directory: ./frontend/sheffessions
         run: pnpm install
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -U postgres_user; then
+              break
+            fi
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 1
+          done
 
       - name: Build and Run sheffessions_api
         working-directory: ./backend/sheffessions_api
@@ -120,5 +174,3 @@ jobs:
       - name: Shutdown Backend
         if: always()
         run: pkill server
-
-
