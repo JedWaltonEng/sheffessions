@@ -115,7 +115,8 @@ jobs:
       - name: 'Install Migrate CLI'
         run: curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz && mv migrate.linux-amd64 /usr/local/bin/migrate
 
-      - name: 'Migrate up'
+      - name: 'Run Migrations'
+        working-directory: ./backend/sheffessions_api
         run: migrate -database ${POSTGRESQL_URL} -path db/migrations up
 
       - name: Setup Go
