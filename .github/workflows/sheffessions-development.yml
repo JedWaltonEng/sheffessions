@@ -5,10 +5,10 @@ on:
     branches: [
       "development",
     ]
-  push:
-    branches: [
-      "feature/databases"
-    ]
+  # push:
+  #   branches: [
+  #     "feature/databases"
+  #   ]
 
 jobs:
   unit-test-sheffessions_api:
