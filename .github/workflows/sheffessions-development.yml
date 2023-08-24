@@ -11,11 +11,11 @@ on:
   #   ]
 
 jobs:
-  check-migrations:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+  # check-migrations:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v3
 
   #   - name: Check for migration filename prefix collisions
   #     working-directory: ./backend/sheffessions_api
@@ -93,14 +93,11 @@ jobs:
     #   unit-test-frontend
     # ]
     runs-on: ubuntu-latest
-    env:
-      POSTGRESQL_URL: postgres://postgres:mysecretpassword@postgres:5432/devdb?sslmode=disable
     services:
       postgres:
         image: postgres:latest
         env:
-          # POSTGRESQL_URL: postgres://postgres:mysecretpassword@db:5432/devdb?sslmode=disable&search_path=public
-          POSTGRES_USER: postgres
+          POSTGRES_USER: postgres_user
           POSTGRES_PASSWORD: mysecretpassword
           POSTGRES_DB: devdb
         ports:
