@@ -68,6 +68,9 @@ jobs:
     #   unit-test-frontend
     # ]
     runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_PASSWORD_STAGING: ${{ secrets.POSTGRESQL_PASSWORD_STAGING }}
+      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_STAGING }}@localhost:5432/postgres?sslmode=disable
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -97,11 +100,6 @@ jobs:
             --backup \
             --backup-start-time=04:00 \
             --require-ssl
-
-      - name: 'Configure sheffessions-staging-postgresql password'
-        env:
-          POSTGRESQL_PASSWORD_STAGING: ${{ secrets.POSTGRESQL_PASSWORD_STAGING }}
-        run: |
           gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
 
       - name: Setup Go
@@ -114,12 +112,6 @@ jobs:
       - name: Fetch dependencies
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
-
-      - name: Run sheffessions_api Integration Tests
-        working-directory: ./backend/sheffessions_api
-        run: |
-          export POSTGRESQL_URL="postgres://postgres:${POSTGRESQL_PASSWORD_STAGING}@localhost:5432/postgres?sslmode=disable"
-          go test -v *_integration_test.go
 
       - name: Cache node modules
         uses: actions/cache@v3
@@ -138,11 +130,7 @@ jobs:
 
       - name: 'Construct POSTGRESQL_URL and Run sheffessions_api'
         working-directory: ./backend/sheffessions_api
-        env:
-          POSTGRESQL_PASSWORD_STAGING: ${{ secrets.POSTGRESQL_PASSWORD_STAGING }}
         run: |
-          export POSTGRESQL_URL="postgres://postgres:${POSTGRESQL_PASSWORD_STAGING}@localhost:5432/postgres?sslmode=disable"
-
           wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
           chmod +x cloud_sql_proxy
           ./cloud_sql_proxy -instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql=tcp:5432 &
@@ -160,6 +148,11 @@ jobs:
           ./server &
 
           sleep 10
+
+      - name: Run sheffessions_api Integration Tests
+        working-directory: ./backend/sheffessions_api
+        run: |
+          go test -v *_integration_test.go
 
       - name: Run Frontend Integration Tests
         working-directory: ./frontend/sheffessions
