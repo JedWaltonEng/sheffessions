@@ -6,49 +6,12 @@ on:
       "staging",
       "main"
     ]
-  # push:
-  #   branches: "feature/databases"
+  push:
+    branches: [
+      "feature/databases"
+    ]
 
 jobs:
-  setup_cloudsql_postgres:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v1'
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
-
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v1'
-
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
-        
-      - name: 'Create PostgreSQL Instance on Cloud SQL'
-        run: |
-          gcloud sql instances create sheffessions-staging-postgresql \
-            --project=sheffessions-staging \
-            --database-version=POSTGRES_15 \
-            --tier=db-f1-micro \
-            --region=europe-west2 \
-            --availability-type=zonal \
-            --storage-type=SSD \
-            --storage-size=10 \
-            --storage-auto-increase \
-            --backup \
-            --backup-start-time=04:00 \
-            --require-ssl \
-            --assign-ip \
-            --deletion-protection
-
-      - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
-        run: |
-          gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
-          gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
-
   unit-test-sheffessions_api:
     runs-on: ubuntu-latest
     steps:
@@ -109,6 +72,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: 'Create PostgreSQL Instance on Cloud SQL'
+        run: |
+          gcloud sql instances create sheffessions-staging-postgresql \
+            --project=sheffessions-staging \
+            --database-version=POSTGRES_15 \
+            --tier=db-f1-micro \
+            --region=europe-west2 \
+            --availability-type=zonal \
+            --storage-type=SSD \
+            --storage-size=10 \
+            --storage-auto-increase \
+            --backup \
+            --backup-start-time=04:00 \
+            --require-ssl \
+            --assign-ip \
+            --deletion-protection
+
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -119,8 +99,6 @@ jobs:
       - name: Fetch dependencies
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
-
-      # Setup MySQL database here and run migrations against real staging db
 
       - name: Cache node modules
         uses: actions/cache@v3
@@ -162,6 +140,11 @@ jobs:
         if: always()
         run: pkill server
 
+      - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
+        run: |
+          gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
+          gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
+
   staging-build-sheffessions_api:
     needs: integration-test 
     runs-on: ubuntu-latest
@@ -200,14 +183,6 @@ jobs:
             -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
 
-      - name: 'Purge older Docker images'
-        run: |
-          IMAGE_LIST=$(gcloud artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging --format="value(image.digest)")
-          OLD_IMAGES=$(echo "$IMAGE_LIST" | tail -n +6)
-          for DIGEST in $OLD_IMAGES; do
-            gcloud artifacts docker images delete europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging@${DIGEST} --quiet
-          done
-
   staging-build-sheffessions_fe:
     needs: integration-test
     runs-on: ubuntu-latest
@@ -245,14 +220,6 @@ jobs:
             -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }} .
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }}
 
-      - name: 'Purge older Docker images'
-        run: |
-          IMAGE_LIST=$(gcloud artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging --format="value(image.digest)")
-          OLD_IMAGES=$(echo "$IMAGE_LIST" | tail -n +6)
-          for DIGEST in $OLD_IMAGES; do
-            gcloud artifacts docker images delete europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging@${DIGEST} --quiet
-          done
-
   staging-deploy-sheffessions_api:
     needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
     runs-on: ubuntu-latest
@@ -282,7 +249,8 @@ jobs:
             --memory=128Mi \
             --cpu=1 \
             --timeout=300s \
-            --concurrency=80
+            --concurrency=80 \
+            --set-env-vars POSTGRESQL_URL=${{ env.POSTGRESQL_URL_STAGING }}
 
   staging-deploy-sheffessions_fe:
     needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]

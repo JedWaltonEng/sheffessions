@@ -35,7 +35,10 @@ class SubmissionForm extends React.Component<{}, State> {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ content: this.state.value })
+        body: JSON.stringify({
+          content: this.state.value,
+          source_of_confession: 'sheffessions' // added this line
+        })
       });
 
       if (responseGoAPI.ok) {
