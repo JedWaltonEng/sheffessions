@@ -95,7 +95,9 @@ jobs:
       #       --storage-size=10 \
       #       --storage-auto-increase \
       #       --backup \
-      #       --backup-start-time=04:00
+      #       --backup-start-time=04:00 \
+      #       --require-ssl
+
 
       # - name: 'Install and Start Cloud SQL Proxy'
       #   run: |
@@ -106,6 +108,7 @@ jobs:
 
       - name: 'Configure sheffessions-staging-postgresql password'
         run: |
+          gcloud sql instances patch sheffessions-staging-postgresql --require-ssl
           gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=mysecretpassword
 
       - name: Setup Go
