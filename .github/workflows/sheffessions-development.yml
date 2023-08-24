@@ -7,7 +7,7 @@ on:
     ]
 
 jobs:
-  check-migrations:
+  check-migrations-before-merge:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -32,6 +32,34 @@ jobs:
         done
 
         echo "No migration prefix collisions detected."
+
+
+  check-migrations-on-merge:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Check for migration filename prefix collisions post-merge
+      working-directory: ./backend/sheffessions_api
+      run: |
+        # Explicitly fetch the development branch
+        git fetch origin development
+        # Try merging development into the current branch (simulate what will happen post-merge)
+        git merge origin/development --no-commit --no-ff
+        # Get the list of all migration prefixes post-merge
+        merged_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
+        # Check for duplicates (collisions) within the merged list itself
+        duplicates=$(echo "$merged_migrations_prefixes" | uniq -d)
+        # If there are duplicates, flag them
+        if [[ ! -z "$duplicates" ]]; then
+          echo "Collisions detected for migration prefixes post-merge:"
+          echo "$duplicates"
+          echo "Please update your migration script to avoid conflicts post-merge."
+          exit 1
+        fi
+
+        echo "No migration prefix collisions detected post-merge."
 
   unit-test-sheffessions_api:
     runs-on: ubuntu-latest

@@ -6,67 +6,63 @@ on:
       "staging",
       "main"
     ]
-  # push:
-  #   branches: [
-  #     "feature/databases"
-  #   ]
 
 jobs:
-  # unit-test-sheffessions_api:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #
-  #   - name: Set up Go
-  #     uses: actions/setup-go@v3
-  #     with:
-  #       go-version: '1.21'
-  #       cache: true
-  #       cache-dependency-path: ./backend/sheffessions_api/go.sum
-  #
-  #   - name: Fetch dependencies
-  #     working-directory: ./backend/sheffessions_api
-  #     run: |
-  #       go get -v ./...
-  #
-  #   - name: Run backend/sheffessions_api unit tests
-  #     working-directory: ./backend/sheffessions_api
-  #     run: go test -v *_unit_test.go
-  #
-  # unit-test-frontend:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   
-  #   - name: Install Node.js
-  #     uses: actions/setup-node@v3
-  #     with:
-  #       node-version: '18'
-  #
-  #   - name: Cache node modules
-  #     uses: actions/cache@v3
-  #     with:
-  #       path: ~/.pnpm-cache
-  #       key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-  #       restore-keys: |
-  #         ${{ runner.OS }}-pnpm-
-  #
-  #   - name: Install pnpm
-  #     run: npm install -g pnpm
-  #
-  #   - name: Install dependencies
-  #     working-directory: ./frontend/sheffessions
-  #     run: pnpm install
-  #   
-  #   - name: Run frontend/sheffessions unit tests
-  #     working-directory: ./frontend/sheffessions
-  #     run: pnpm test:unit
+  unit-test-sheffessions_api:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '1.21'
+        cache: true
+        cache-dependency-path: ./backend/sheffessions_api/go.sum
+
+    - name: Fetch dependencies
+      working-directory: ./backend/sheffessions_api
+      run: |
+        go get -v ./...
+
+    - name: Run backend/sheffessions_api unit tests
+      working-directory: ./backend/sheffessions_api
+      run: go test -v *_unit_test.go
+
+  unit-test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Cache node modules
+      uses: actions/cache@v3
+      with:
+        path: ~/.pnpm-cache
+        key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.OS }}-pnpm-
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install dependencies
+      working-directory: ./frontend/sheffessions
+      run: pnpm install
+    
+    - name: Run frontend/sheffessions unit tests
+      working-directory: ./frontend/sheffessions
+      run: pnpm test:unit
 
   integration-test:
-    # needs: [
-    #   unit-test-sheffessions_api,
-    #   unit-test-frontend
-    # ]
+    needs: [
+      unit-test-sheffessions_api,
+      unit-test-frontend
+    ]
     runs-on: ubuntu-latest
     env:
       POSTGRESQL_PASSWORD_STAGING: ${{ secrets.POSTGRESQL_PASSWORD_STAGING }}
