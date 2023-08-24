@@ -108,25 +108,9 @@ jobs:
           else
             echo "Instance sheffessions-staging-postgresql already exists."
             echo "Skipping creation." 
-            echo "Updating password to $POSTGRESQL_PASSWORD_STAGING"
+            echo "Updating password to POSTGRESQL_PASSWORD_STAGING"
             gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
           fi
-
-      # - name: 'Create PostgreSQL Instance on Cloud SQL'
-      #   run: |
-      #     gcloud sql instances create sheffessions-staging-postgresql \
-      #       --project=sheffessions-staging \
-      #       --database-version=POSTGRES_15 \
-      #       --tier=db-f1-micro \
-      #       --region=europe-west2 \
-      #       --availability-type=zonal \
-      #       --storage-type=SSD \
-      #       --storage-size=10 \
-      #       --storage-auto-increase \
-      #       --backup \
-      #       --backup-start-time=04:00 \
-      #       --require-ssl
-      #     gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
 
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -189,48 +173,41 @@ jobs:
         if: always()
         run: pkill server
 
-      # - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
-      #   run: |
-      #     gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
-      #     gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
+  staging-build-sheffessions_api:
+    needs: integration-test 
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag_sheffessions_api_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  # staging-build-sheffessions_api:
-  #   needs: integration-test 
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     image_tag_sheffessions_api_staging: ${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-  #
-  #     - id: 'auth'
-  #       uses: 'google-github-actions/auth@v1'
-  #       with:
-  #         credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
-  #
-  #     - name: 'Set up Cloud SDK'
-  #       uses: 'google-github-actions/setup-gcloud@v1'
-  #
-  #     - name: 'Use gcloud CLI'
-  #       run: 'gcloud info'
-  #
-  #     - name: 'Configure Docker for Artifact Registry'
-  #       run: |
-  #         gcloud --quiet auth configure-docker europe-docker.pkg.dev
-  #
-  #     - name: Generate image tag
-  #       id: generate_tag
-  #       run: |
-  #         echo "IMAGE_TAG_SHEFFESSIONS_API_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-  #
-  #     - name: 'Build and push Docker image'
-  #       working-directory: ./backend/sheffessions_api
-  #       run: |
-  #         docker build \
-  #           --build-arg MYSQL_DATABASE_STAGING=${{ secrets.MYSQL_DATABASE_STAGING }} \
-  #           --build-arg MYSQL_ROOT_PASSWORD_STAGING=${{ secrets.MYSQL_ROOT_PASSWORD_STAGING }} \
-  #           -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
-  #         docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      - name: 'Configure Docker for Artifact Registry'
+        run: |
+          gcloud --quiet auth configure-docker europe-docker.pkg.dev
+
+      - name: Generate image tag
+        id: generate_tag
+        run: |
+          echo "IMAGE_TAG_SHEFFESSIONS_API_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: 'Build and push Docker image'
+        working-directory: ./backend/sheffessions_api
+        run: |
+          docker build \
+            -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
+          docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
   #
   # staging-build-sheffessions_fe:
   #   needs: integration-test
@@ -269,36 +246,41 @@ jobs:
   #           -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }} .
   #         docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }}
   #
-  # staging-deploy-sheffessions_api:
-  #   needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-  #
-  #     - id: 'auth'
-  #       uses: 'google-github-actions/auth@v1'
-  #       with:
-  #         credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
-  #
-  #     - name: 'Set up Cloud SDK'
-  #       uses: 'google-github-actions/setup-gcloud@v1'
-  #
-  #     - name: 'Use gcloud CLI'
-  #       run: 'gcloud info'
-  #
-  #     - name: 'Deploy to Cloud Run (API)'
-  #       run: |
-  #         gcloud run deploy sheffessions-api-staging \
-  #           --image=europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ needs.staging-build-sheffessions_api.outputs.image_tag_sheffessions_api_staging }} \
-  #           --region=europe-west1 \
-  #           --platform=managed \
-  #           --allow-unauthenticated \
-  #           --project=sheffessions-staging \
-  #           --memory=128Mi \
-  #           --cpu=1 \
-  #           --timeout=300s \
-  #           --concurrency=80
+  staging-deploy-sheffessions_api:
+    needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
+    runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD_STAGING }}
+      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD }}@/postgres?host=/cloudsql/sheffessions-staging:europe-west2:sheffessions-staging-postgresql&sslmode=disable
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      - name: 'Deploy to Cloud Run (API)'
+        run: |
+          gcloud run deploy sheffessions-api-staging \
+            --image=europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ needs.staging-build-sheffessions_api.outputs.image_tag_sheffessions_api_staging }} \
+            --region=europe-west1 \
+            --platform=managed \
+            --allow-unauthenticated \
+            --project=sheffessions-staging \
+            --memory=128Mi \
+            --cpu=1 \
+            --timeout=300s \
+            --concurrency=80 \
+            --add-cloudsql-instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql \
+            --set-env-vars=POSTGRESQL_URL=${POSTGRESQL_URL}
   #
   # staging-deploy-sheffessions_fe:
   #   needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
