@@ -6,10 +6,10 @@ on:
       "staging",
       # "main"
     ]
-  # push:
-  #   branches: [
-  #     "feature/rollbacks"
-  #   ]
+  push:
+    branches: [
+      "feature/rollbacks"
+    ]
 
 jobs:
   unit-test-sheffessions_api:
