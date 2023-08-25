@@ -176,10 +176,32 @@ jobs:
         run: |
           echo "MIGRATIONS_LIST=$(ls db/migrations | sort | tr '\n' ';')" >> $GITHUB_ENV
 
+      # - name: Apply Migrations Iteratively
+      #   working-directory: ./backend/sheffessions_api
+      #   run: |
+      #     IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
+      #     for migration in "${MIGRATIONS[@]}"; do
+      #       # Only apply up migrations
+      #       if [[ $migration == *".up.sql" ]]; then
+      #         psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
+      #         migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
+      #         if [ $? -ne 0 ]; then
+      #           echo "Migration $migration failed. Rolling back..."
+      #           migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
+      #           exit 1
+      #         fi
+      #       fi
+      #     done
+      #
       - name: Apply Migrations Iteratively
         working-directory: ./backend/sheffessions_api
         run: |
           IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
+          # Check if there are migrations to apply
+          if [[ -z "${MIGRATIONS[*]}" ]]; then
+            echo "No migrations to apply."
+            exit 0
+          fi
           for migration in "${MIGRATIONS[@]}"; do
             # Only apply up migrations
             if [[ $migration == *".up.sql" ]]; then
@@ -193,22 +215,6 @@ jobs:
             fi
           done
 
-      # - name: Apply Migrations Iteratively
-      #   working-directory: ./backend/sheffessions_api
-      #   run: |
-      #     IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
-      #     for migration in "${MIGRATIONS[@]}"; do
-      #       # Only apply up migrations
-      #       if [[ $migration == *".up.sql" ]]; then
-      #         psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
-      #         migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
-      #         if [ $? -ne 0 ]; then
-      #           echo "Migration $migration failed. Resetting the database..."
-      #           gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
-      #           exit 1
-      #         fi
-      #       fi
-      #     done
 
       - name: Rollback Migration on Failure
         if: failure()
