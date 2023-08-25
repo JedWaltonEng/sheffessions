@@ -189,8 +189,7 @@ jobs:
             fi
           done
 
-      - name:
-        - name: Rollback Migration on Failure
+      - name: Rollback Migration on Failure
         if: failure()
         working-directory: ./backend/sheffessions_api
         run: |
