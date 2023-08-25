@@ -194,8 +194,19 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: |
           echo "An error occurred earlier in the workflow. Rolling back last migration..."
+          
+          # Retrieve the last successful migration version from the database
+          MIGRATION_VERSION=$(psql ${POSTGRESQL_URL} -t -c "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")
+          
+          # If there's no result, there's no need to rollback
+          if [[ -z "$MIGRATION_VERSION" ]]; then
+            echo "No migrations applied yet. Skipping rollback."
+            exit 0
+          fi
+
           # Force clean the dirty state
-          migrate -database ${POSTGRESQL_URL} -path db/migrations force $(($MIGRATION_VERSION-1))
+          migrate -database ${POSTGRESQL_URL} -path db/migrations force $MIGRATION_VERSION
+          
           # Now roll back the last migration
           migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
           if [ $? -ne 0 ]; then
@@ -203,6 +214,7 @@ jobs:
             gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
             exit 1
           fi
+
 
       - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
