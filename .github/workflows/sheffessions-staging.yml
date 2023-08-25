@@ -174,12 +174,13 @@ jobs:
       - name: List Migrations
         working-directory: ./backend/sheffessions_api
         run: |
-          echo "MIGRATIONS_LIST=$(ls db/migrations | sort)" >> $GITHUB_ENV
+          echo "MIGRATIONS_LIST=$(ls db/migrations | sort | tr '\n' ';')" >> $GITHUB_ENV
 
       - name: Apply Migrations Iteratively
         working-directory: ./backend/sheffessions_api
         run: |
-          for migration in $MIGRATIONS_LIST; do
+          IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
+          for migration in "${MIGRATIONS[@]}"; do
             migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
             if [ $? -ne 0 ]; then
               echo "Migration $migration failed. Rolling back..."
