@@ -159,11 +159,6 @@ jobs:
 
           sleep 10
 
-      - name: List Backups for PostgreSQL Database
-        run: |
-          BACKUP_ID=$(gcloud sql backups list --instance=sheffessions-staging-postgresql --sort-by="~creationTimestamp" --limit=1 --format="get(id)")
-          echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
-
       - name: 'Install Migrate CLI'
         run: curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz && mv migrate.linux-amd64 /usr/local/bin/migrate
 
@@ -171,16 +166,20 @@ jobs:
         run: |
           gcloud sql backups create --instance=sheffessions-staging-postgresql
 
+      - name: List Backups for PostgreSQL Database
+        run: |
+          BACKUP_ID=$(gcloud sql backups list --instance=sheffessions-staging-postgresql --sort-by="~creationTimestamp" --limit=1 --format="get(id)")
+          echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
+
       - name: List Migrations
         working-directory: ./backend/sheffessions_api
-        id: migrations_list
         run: |
-          echo "::set-output name=list::$(ls db/migrations | sort)"
+          echo "MIGRATIONS_LIST=$(ls db/migrations | sort)" >> $GITHUB_ENV
 
       - name: Apply Migrations Iteratively
         working-directory: ./backend/sheffessions_api
         run: |
-          for migration in ${{ steps.migrations_list.outputs.list }}; do
+          for migration in $MIGRATIONS_LIST; do
             migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
             if [ $? -ne 0 ]; then
               echo "Migration $migration failed. Rolling back..."
@@ -199,7 +198,7 @@ jobs:
             echo "Rollback failed. Attempting to restore from backup..."
             gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
             exit 1
-          fi
+        fi
 
       - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
