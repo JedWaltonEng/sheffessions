@@ -165,8 +165,8 @@ jobs:
           curl -L -o migrate.linux-amd64.tar.gz https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
           
           # The expected checksum (replace with your actual value)
-          CHECKSUM="YOUR_ACTUAL_SHA256_CHECKSUM_VALUE"
-          
+          CHECKSUM="b92fe73d3fc9ea2bd1e02c5b7840c16268e78956c0c05f6bdb90a78c42637020"
+
           # Verify the checksum
           echo "$CHECKSUM  migrate.linux-amd64.tar.gz" | sha256sum --check
           if [[ $? -ne 0 ]]; then
