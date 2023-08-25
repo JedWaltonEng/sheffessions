@@ -214,7 +214,6 @@ jobs:
             gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
             exit 1
           fi
-
           echo "Rollback successful and database is clean."
 
 
