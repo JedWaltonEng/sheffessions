@@ -184,6 +184,7 @@ jobs:
           for migration in "${MIGRATIONS[@]}"; do
             # Only apply up migrations
             if [[ $migration == *".up.sql" ]]; then
+              psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
               migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
               if [ $? -ne 0 ]; then
                 echo "Migration $migration failed. Rolling back..."
