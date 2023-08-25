@@ -164,11 +164,20 @@ jobs:
 
       - name: Backup PostgreSQL Database
         run: |
+          TIMESTAMP=$(date --utc +%Y-%m-%dT%H:%M:%SZ)  # store current UTC timestamp
           gcloud sql backups create --instance=sheffessions-staging-postgresql
+          echo "BACKUP_TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
 
       - name: List Backups for PostgreSQL Database
         run: |
-          BACKUP_ID=$(gcloud sql backups list --instance=sheffessions-staging-postgresql --sort-by="~creationTimestamp" --limit=1 --format="get(id)")
+          # Now, fetch the backup that was created after the stored TIMESTAMP
+          BACKUP_ID=$(gcloud sql backups list --instance=sheffessions-staging-postgresql --filter="startTime>'$BACKUP_TIMESTAMP'" --sort-by="~creationTimestamp" --limit=1 --format="get(id)")
+          
+          if [[ -z "$BACKUP_ID" ]]; then
+            echo "Error: No backup found that was created after $BACKUP_TIMESTAMP"
+            exit 1
+          fi
+          
           echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
 
       - name: List Migrations
