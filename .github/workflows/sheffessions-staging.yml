@@ -174,28 +174,14 @@ jobs:
       - name: List Migrations
         working-directory: ./backend/sheffessions_api
         run: |
-          echo "MIGRATIONS_LIST=$(ls db/migrations | sort | tr '\n' ';')" >> $GITHUB_ENV
+          echo "MIGRATIONS_LIST=$(find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$' | sort | tr '\n' ';')" >> $GITHUB_ENV
 
-      # - name: Apply Migrations Iteratively
-      #   working-directory: ./backend/sheffessions_api
-      #   run: |
-      #     IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
-      #     for migration in "${MIGRATIONS[@]}"; do
-      #       # Only apply up migrations
-      #       if [[ $migration == *".up.sql" ]]; then
-      #         psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
-      #         migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
-      #         if [ $? -ne 0 ]; then
-      #           echo "Migration $migration failed. Rolling back..."
-      #           migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
-      #           exit 1
-      #         fi
-      #       fi
-      #     done
-      #
       - name: Apply Migrations Iteratively
         working-directory: ./backend/sheffessions_api
         run: |
+          # Set search path once before executing migrations
+          psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
+          
           IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
           # Check if there are migrations to apply
           if [[ -z "${MIGRATIONS[*]}" ]]; then
@@ -205,7 +191,7 @@ jobs:
           for migration in "${MIGRATIONS[@]}"; do
             # Only apply up migrations
             if [[ $migration == *".up.sql" ]]; then
-              psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
+              echo "==== Applying migration: $migration ===="
               migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
               if [ $? -ne 0 ]; then
                 echo "Migration $migration failed. Rolling back..."
@@ -239,19 +225,6 @@ jobs:
           fi
           echo "Rollback successful and database is clean."
 
-
-      - name: Check for Dirty Migrations
-        if: failure()
-        working-directory: ./backend/sheffessions_api
-        run: |
-          DIRTY_STATE=$(psql ${POSTGRESQL_URL} -t -c "SELECT dirty FROM schema_migrations WHERE dirty = true LIMIT 1")
-          if [[ "$DIRTY_STATE" == "true" ]]; then
-            echo "The database is in a dirty state!"
-            gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
-            exit 1
-          else
-            echo "The database is clean."
-          fi
 
       - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
