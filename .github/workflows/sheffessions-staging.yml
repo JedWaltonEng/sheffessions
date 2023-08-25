@@ -6,6 +6,10 @@ on:
       "staging",
       # "main"
     ]
+  # push:
+  #   branches: [
+  #     "feature/rollbacks"
+  #   ]
 
 jobs:
   unit-test-sheffessions_api:
@@ -155,12 +159,47 @@ jobs:
 
           sleep 10
 
+      - name: List Backups for PostgreSQL Database
+        run: |
+          BACKUP_ID=$(gcloud sql backups list --instance=sheffessions-staging-postgresql --sort-by="~creationTimestamp" --limit=1 --format="get(id)")
+          echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
+
       - name: 'Install Migrate CLI'
         run: curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz && mv migrate.linux-amd64 /usr/local/bin/migrate
 
-      - name: 'Run Migrations'
+      - name: Backup PostgreSQL Database
+        run: |
+          gcloud sql backups create --instance=sheffessions-staging-postgresql
+
+      - name: List Migrations
         working-directory: ./backend/sheffessions_api
-        run: migrate -database ${POSTGRESQL_URL} -path db/migrations up
+        id: migrations_list
+        run: |
+          echo "::set-output name=list::$(ls db/migrations | sort)"
+
+      - name: Apply Migrations Iteratively
+        working-directory: ./backend/sheffessions_api
+        run: |
+          for migration in ${{ steps.migrations_list.outputs.list }}; do
+            migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
+            if [ $? -ne 0 ]; then
+              echo "Migration $migration failed. Rolling back..."
+              migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
+              exit 1
+            fi
+          done
+
+      - name: Rollback Migration on Failure
+        if: failure()
+        working-directory: ./backend/sheffessions_api
+        run: |
+          echo "An error occurred earlier in the workflow. Rolling back last migration..."
+          migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
+          if [ $? -ne 0 ]; then
+            echo "Rollback failed. Attempting to restore from backup..."
+            gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
+            exit 1
+          fi
 
       - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
