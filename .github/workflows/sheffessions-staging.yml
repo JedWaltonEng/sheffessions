@@ -164,8 +164,11 @@ jobs:
           # Download the migrate CLI
           curl -L -o migrate.linux-amd64.tar.gz https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
           
+          # The expected checksum (replace with your actual value)
+          CHECKSUM="YOUR_ACTUAL_SHA256_CHECKSUM_VALUE"
+          
           # Verify the checksum
-          echo "expected_sha256_value  migrate.linux-amd64.tar.gz" | sha256sum --check
+          echo "$CHECKSUM  migrate.linux-amd64.tar.gz" | sha256sum --check
           if [[ $? -ne 0 ]]; then
             echo "Checksum verification failed!"
             exit 1
@@ -174,6 +177,7 @@ jobs:
           # If checksum verification passes, extract and move the binary
           tar xvz -f migrate.linux-amd64.tar.gz
           mv migrate.linux-amd64 /usr/local/bin/migrate
+
 
       - name: Backup PostgreSQL Database
         run: |
