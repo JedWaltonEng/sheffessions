@@ -215,6 +215,16 @@ jobs:
             exit 1
           fi
 
+       - name: Check for Dirty Migrations
+         working-directory: ./backend/sheffessions_api
+         run: |
+           DIRTY_STATE=$(psql ${POSTGRESQL_URL} -t -c "SELECT dirty FROM schema_migrations WHERE dirty = true LIMIT 1")
+           if [[ "$DIRTY_STATE" == "true" ]]; then
+             echo "The database is in a dirty state!"
+             exit 1
+           else
+             echo "The database is clean."
+           fi
 
       - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
