@@ -181,11 +181,14 @@ jobs:
         run: |
           IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
           for migration in "${MIGRATIONS[@]}"; do
-            migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
-            if [ $? -ne 0 ]; then
-              echo "Migration $migration failed. Rolling back..."
-              migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
-              exit 1
+            # Only apply up migrations
+            if [[ $migration == *".up.sql" ]]; then
+              migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
+              if [ $? -ne 0 ]; then
+                echo "Migration $migration failed. Rolling back..."
+                migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
+                exit 1
+              fi
             fi
           done
 
@@ -194,26 +197,25 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: |
           echo "An error occurred earlier in the workflow. Rolling back last migration..."
-          
-          # Retrieve the last successful migration version from the database
           MIGRATION_VERSION=$(psql ${POSTGRESQL_URL} -t -c "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")
-          
-          # If there's no result, there's no need to rollback
+
           if [[ -z "$MIGRATION_VERSION" ]]; then
             echo "No migrations applied yet. Skipping rollback."
             exit 0
           fi
 
-          # Force clean the dirty state
           migrate -database ${POSTGRESQL_URL} -path db/migrations force $MIGRATION_VERSION
-          
-          # Now roll back the last migration
           migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
-          if [ $? -ne 0 ]; then
-            echo "Rollback failed. Attempting to restore from backup..."
+
+          DIRTY_STATE=$(psql ${POSTGRESQL_URL} -t -c "SELECT dirty FROM schema_migrations WHERE dirty = true LIMIT 1")
+          if [[ "$DIRTY_STATE" == "true" ]]; then
+            echo "The database is in a dirty state!"
             gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
             exit 1
           fi
+
+          echo "Rollback successful and database is clean."
+
 
       - name: Check for Dirty Migrations
         if: failure()
