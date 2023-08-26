@@ -23,24 +23,32 @@ jobs:
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
 
-    - name: Install gcloud beta components
-      run: gcloud components install beta --quiet
-
     - name: Delete old images from sheffessions_api_staging
       run: |
-        # Get the list of digests, sort them based on timestamp and exclude the latest 5
-        DIGESTS_TO_DELETE=$(gcloud beta artifacts docker images list-tags europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging --format="get(digest, updateTime.date())" | sort -k2 -r | tail -n +6 | awk '{print $1}')
+        # Get the list of images
+        IMAGES=$(gcloud artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging --format='value(image)')
+        for IMAGE in $IMAGES; do
+          DETAILS=$(gcloud artifacts docker images describe $IMAGE --format='value(image.digest, createTime)')
+          echo $DETAILS >> api_image_details.txt
+        done
+        DIGESTS_TO_DELETE=$(sort -k2 -r api_image_details.txt | tail -n +6 | awk '{print $1}')
         for DIGEST in $DIGESTS_TO_DELETE; do
-          gcloud beta artifacts docker images delete "europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging@$DIGEST" --delete-tags --quiet
+          gcloud beta artifacts docker images delete "europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging@$DIGEST" --quiet
         done
 
     - name: Delete old images from sheffessions_fe_staging
       run: |
-        # Get the list of digests, sort them based on timestamp and exclude the latest 5
-        DIGESTS_TO_DELETE=$(gcloud beta artifacts docker images list-tags europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging --format="get(digest, updateTime.date())" | sort -k2 -r | tail -n +6 | awk '{print $1}')
-        for DIGEST in $DIGESTS_TO_DELETE; do
-          gcloud beta artifacts docker images delete "europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging@$DIGEST" --delete-tags --quiet
+        # Get the list of images
+        IMAGES=$(gcloud artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging --format='value(image)')
+        for IMAGE in $IMAGES; do
+          DETAILS=$(gcloud artifacts docker images describe $IMAGE --format='value(image.digest, createTime)')
+          echo $DETAILS >> fe_image_details.txt
         done
+        DIGESTS_TO_DELETE=$(sort -k2 -r fe_image_details.txt | tail -n +6 | awk '{print $1}')
+        for DIGEST in $DIGESTS_TO_DELETE; do
+          gcloud beta artifacts docker images delete "europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging@$DIGEST" --quiet
+        done
+
     # - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
     #   run: |
     #     gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection

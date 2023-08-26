@@ -3,7 +3,7 @@ name: Tear Down Staging Instance
 on:
   schedule:
     - cron: '0 4 * * *'  # This runs at 4 AM every day
-  push:
+  # push:
     # branches: [
     #   "feature/rollbacks"
     # ]
