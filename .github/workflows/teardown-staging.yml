@@ -24,6 +24,9 @@ jobs:
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
 
+    - name: Install gcloud beta components
+      run: gcloud components install beta --quiet
+
     # - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
     #   run: |
     #     gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
@@ -33,18 +36,18 @@ jobs:
       run: |
         # List the images in the registry, sorted by creation time (newest first), and filter out the N latest.
         # Adjust the number in `tail -n +N` to keep the last N versions. For example, to keep the last 5, you would use `tail -n +6`.
-        IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api --format='get(name)' --sort-by=~timestamp | tail -n +6)
+        IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api --format='get(name)' --sort-by=~timestamp --quiet | tail -n +6)
         
         # Delete each of the images
         for IMAGE in $IMAGES_TO_DELETE; do
-          gcloud beta artifacts docker images delete $IMAGE
+          gcloud beta artifacts docker images delete $IMAGE --quiet
         done
 
-        IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api --format='get(name)' --sort-by=~timestamp | tail -n +6)
+        IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api --format='get(name)' --sort-by=~timestamp --quiet | tail -n +6)
 
         # Delete each of the images
         for IMAGE in $IMAGES_TO_DELETE; do
-          gcloud beta artifacts docker images delete $IMAGE
+          gcloud beta artifacts docker images delete $IMAGE --quiet
         done
 
     # cleanup-production:
@@ -71,4 +74,4 @@ jobs:
     #     # Delete each of the images
     #     for IMAGE in $IMAGES_TO_DELETE; do
     #       gcloud beta artifacts docker images delete $IMAGE
-        done
+        # done
