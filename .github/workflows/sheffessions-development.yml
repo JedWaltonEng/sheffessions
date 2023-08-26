@@ -7,7 +7,100 @@ on:
     ]
 
 jobs:
+  check-migrations-before-merge:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Check for migration filename prefix collisions against development
+      working-directory: ./backend/sheffessions_api
+      run: |
+        # Explicitly fetch the development branch
+        git fetch origin development
+        # Get the list of all migration prefixes in the PR (i.e., current branch)
+        pr_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
+        # Get the list of all migration prefixes in development
+        development_migrations_prefixes=$(git ls-tree -r origin/development --name-only db/migrations | cut -d'_' -f1 | sort | uniq)
+        # Compare the migration prefixes from your PR with those in development
+        for prefix in $pr_migrations_prefixes; do
+          if echo "$development_migrations_prefixes" | grep -q "^${prefix}$"; then
+            echo "Collision detected for migration prefix: $prefix"
+            echo "Please update your migration script to avoid conflicts with the development branch."
+            exit 1
+          fi
+        done
+
+        echo "No migration prefix collisions detected."
+
+    - name: Check for migration filename prefix collisions within the same commit
+      working-directory: ./backend/sheffessions_api
+      run: |
+        # Step 1: Extract all prefixes for up and down migrations
+        up_migrations=$(ls db/migrations | grep ".up.sql" | cut -d'_' -f1 | sort)
+        down_migrations=$(ls db/migrations | grep ".down.sql" | cut -d'_' -f1 | sort)
+
+        # Step 2: Ensure matching pairs for every up migration
+        for prefix in $up_migrations; do
+          if ! echo "$down_migrations" | grep -q "^${prefix}$"; then
+            echo "Missing .down.sql migration for prefix: $prefix"
+            exit 1
+          fi
+        done
+
+        # Step 3: Check for any true duplicates
+        all_migrations=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
+        for prefix in $all_migrations; do
+          count=$(ls db/migrations | grep "^${prefix}_" | wc -l)
+          if [ "$count" -gt 2 ]; then
+            echo "Collisions detected for migration prefix: $prefix"
+            echo "More than one set of .up.sql and .down.sql files share the same prefix within the same commit."
+            exit 1
+          fi
+        done
+
+        echo "No migration prefix collisions detected within the same commit."
+
+  check-migrations-on-merge:
+    needs: [ check-migrations-before-merge ]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Check for migration filename prefix collisions post-merge
+      working-directory: ./backend/sheffessions_api
+      run: |
+        # Explicitly fetch the development branch
+        git fetch origin development
+        # Check if branches have a common base
+        merge_base=$(git merge-base HEAD origin/development)
+        if [ -z "$merge_base" ]; then
+          echo "The branches have unrelated histories. This can cause issues during merge."
+          exit 1
+        fi
+        # Try merging development into the current branch (simulate what will happen post-merge)
+        git merge origin/development --no-commit --no-ff --allow-unrelated-histories
+        # Get the list of all migration prefixes post-merge
+        merged_migrations_prefixes=$(ls db/migrations | cut -d'_' -f1 | sort | uniq)
+        # Check for duplicates (collisions) within the merged list itself
+        duplicates=$(echo "$merged_migrations_prefixes" | uniq -d)
+        # If there are duplicates, flag them
+        if [[ ! -z "$duplicates" ]]; then
+          echo "Collisions detected for migration prefixes post-merge:"
+          echo "$duplicates"
+          echo "Please update your migration script to avoid conflicts post-merge."
+          exit 1
+        fi
+        echo "No migration prefix collisions detected post-merge."
+
   unit-test-sheffessions_api:
+    needs: [
+      check-migrations-before-merge,
+      check-migrations-on-merge
+    ]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -29,6 +122,10 @@ jobs:
       run: go test -v *_unit_test.go
 
   unit-test-frontend:
+    needs: [
+      check-migrations-before-merge,
+      check-migrations-on-merge
+    ]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -63,6 +160,23 @@ jobs:
       unit-test-frontend
     ]
     runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_URL: postgres://postgres_user:mysecretpassword@localhost:5432/devdb?sslmode=disable&search_path=public
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres_user
+          POSTGRES_PASSWORD: mysecretpassword
+          POSTGRES_DB: devdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -78,9 +192,6 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
 
-      # Setup MySQL database here
-
-      # Cache pnpm modules
       - name: Cache node modules
         uses: actions/cache@v3
         with:
@@ -95,6 +206,23 @@ jobs:
       - name: Install dependencies
         working-directory: ./frontend/sheffessions
         run: pnpm install
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -U postgres_user; then
+              break
+            fi
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 1
+          done
+
+      - name: 'Install Migrate CLI'
+        run: curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz && mv migrate.linux-amd64 /usr/local/bin/migrate
+
+      - name: 'Run Migrations'
+        working-directory: ./backend/sheffessions_api
+        run: migrate -database ${POSTGRESQL_URL} -path db/migrations up
 
       - name: Build and Run sheffessions_api
         working-directory: ./backend/sheffessions_api
@@ -120,5 +248,3 @@ jobs:
       - name: Shutdown Backend
         if: always()
         run: pkill server
-
-

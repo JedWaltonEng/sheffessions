@@ -1,10 +1,17 @@
 ## 
 
 - Run GH actions locally with https://github.com/nektos/act
-    `$ gh act -v`
+    - `$ gh act -v`
 
 - Start dev environment.
-    `$ cd docker && docker compose up`
+    - `$ cd docker && docker compose up`
+
+- Migrations
+    - `$ go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest`
+    - `$ export POSTGRESQL_URL=postgres://postgres:mysecretpassword@localhost:5432/devdb?sslmode=disable`
+    - https://github.com/golang-migrate/migrate/blob/master/database/postgres/TUTORIAL.md
+    - `$ sudo apt-get update & sudo apt-get install postgresql-client`
+    - `$ psql -h localhost -U postgres -d devdb -p 5432 -c "\d confessions"`
 
 Todo:
 -----

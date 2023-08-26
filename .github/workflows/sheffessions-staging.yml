@@ -4,7 +4,6 @@ on:
   pull_request:
     branches: [ 
       "staging",
-      "main"
     ]
 
 jobs:
@@ -64,9 +63,49 @@ jobs:
       unit-test-frontend
     ]
     runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_PASSWORD_STAGING: ${{ secrets.POSTGRESQL_PASSWORD_STAGING }}
+      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_STAGING }}@localhost:5432/postgres?sslmode=disable
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_STAGING }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      - name: 'Check Instance on Cloud SQL exists and update db password'
+        run: |
+          INSTANCE_EXISTS=$(gcloud sql instances list --filter="name:sheffessions-staging-postgresql" --format="get(name)")
+
+          if [[ -z "$INSTANCE_EXISTS" ]]; then
+            gcloud sql instances create sheffessions-staging-postgresql \
+              --project=sheffessions-staging \
+              --database-version=POSTGRES_15 \
+              --tier=db-f1-micro \
+              --region=europe-west2 \
+              --availability-type=zonal \
+              --storage-type=SSD \
+              --storage-size=10 \
+              --storage-auto-increase \
+              --backup \
+              --backup-start-time=04:00 \
+              --require-ssl
+
+            gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
+          else
+            echo "Instance sheffessions-staging-postgresql already exists."
+            echo "Skipping creation." 
+            echo "Updating password to POSTGRESQL_PASSWORD_STAGING"
+            gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
+          fi
 
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -79,9 +118,6 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: go get -v ./...
 
-      # Setup MySQL database here and run migrations against real staging db
-
-      # Cache pnpm modules
       - name: Cache node modules
         uses: actions/cache@v3
         with:
@@ -97,21 +133,111 @@ jobs:
         working-directory: ./frontend/sheffessions
         run: pnpm install
 
-      - name: Build and Run sheffessions_api
+      - name: 'Construct POSTGRESQL_URL and Run sheffessions_api'
         working-directory: ./backend/sheffessions_api
         run: |
+          wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+          chmod +x cloud_sql_proxy
+          ./cloud_sql_proxy -instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql=tcp:5432 &
+
+          echo "Waiting for Cloud SQL Proxy to be up..."
+          for i in {1..30}; do
+            if netstat -an | grep "5432" > /dev/null; then
+              echo "Cloud SQL Proxy started!"
+              break
+            fi
+            sleep 1
+          done
+
           go build -o server main.go
           ./server &
 
-      - name: Wait for Backend to Start
+          sleep 10
+
+      - name: 'Install Migrate CLI'
         run: |
-          while ! curl -s localhost:8080 > /dev/null; do
-            sleep 5
+          curl -L -o migrate.linux-amd64.tar.gz https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
+          CHECKSUM="b92fe73d3fc9ea2bd1e02c5b7840c16268e78956c0c05f6bdb90a78c42637020"
+          echo "$CHECKSUM  migrate.linux-amd64.tar.gz" | sha256sum --check
+          if [[ $? -ne 0 ]]; then
+            echo "Checksum verification failed!"
+            exit 1
+          fi
+          tar xvz -f migrate.linux-amd64.tar.gz
+          mv migrate.linux-amd64 /usr/local/bin/migrate
+
+      - name: Backup PostgreSQL Database
+        run: |
+          TIMESTAMP=$(date --utc +%Y-%m-%dT%H:%M:%SZ)  # store current UTC timestamp
+          gcloud sql backups create --instance=sheffessions-staging-postgresql
+          echo "BACKUP_TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+
+      - name: List Backups for PostgreSQL Database
+        run: |
+          RETRY_COUNT=0
+          MAX_RETRIES=5
+          SLEEP_DURATION=30
+          while [[ -z "$BACKUP_ID" && $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+            BACKUP_ID=$(gcloud sql backups list --instance=sheffessions-staging-postgresql --filter="startTime>'$BACKUP_TIMESTAMP'" --sort-by="~creationTimestamp" --limit=1 --format="get(id)")
+            if [[ -z "$BACKUP_ID" ]]; then
+              echo "Backup not found for attempt $((RETRY_COUNT+1)). Retrying in $SLEEP_DURATION seconds..."
+              sleep $SLEEP_DURATION
+              ((RETRY_COUNT++))
+            fi
           done
+
+          if [[ -z "$BACKUP_ID" ]]; then
+            echo "Error: No backup found that was created after $BACKUP_TIMESTAMP after $MAX_RETRIES attempts"
+            exit 1
+          fi
+
+          echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
+
+      - name: List Migrations
+        working-directory: ./backend/sheffessions_api
+        run: |
+          echo "MIGRATIONS_LIST=$(find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$' | sort | tr '\n' ';')" >> $GITHUB_ENV
+
+      - name: Apply Migrations Iteratively
+        working-directory: ./backend/sheffessions_api
+        run: |
+          psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
+          IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
+          if [[ -z "${MIGRATIONS[*]}" ]]; then
+            echo "No migrations to apply."
+            exit 0
+          fi
+          for migration in "${MIGRATIONS[@]}"; do
+            if [[ $migration == *".up.sql" ]]; then
+              echo "==== Applying migration: $migration ===="
+              migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
+              if [ $? -ne 0 ]; then
+                echo "Migration $migration failed. Rolling back..."
+                migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Check Database State
+        if: failure()
+        working-directory: ./backend/sheffessions_api
+        run: |
+          echo "Checking if the database is in a dirty state"
+          DIRTY_STATE=$(psql ${POSTGRESQL_URL} -t -c "SELECT dirty FROM schema_migrations WHERE dirty = true LIMIT 1")
+          if [[ "$DIRTY_STATE" == "true" ]]; then
+            echo "The database is in a dirty state!"
+            # We only restore automatically in staging. This can be uncommented in an emergency
+            gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
+            exit 1
+          fi
+          echo "Database is in a clean state."
+
 
       - name: Run sheffessions_api Integration Tests
         working-directory: ./backend/sheffessions_api
-        run: go test -v *_integration_test.go
+        run: |
+          go test -v *_integration_test.go
 
       - name: Run Frontend Integration Tests
         working-directory: ./frontend/sheffessions
@@ -142,24 +268,19 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      # Configure Docker to use gcloud command-line tool as a credential helper for Artifact Registry
       - name: 'Configure Docker for Artifact Registry'
         run: |
           gcloud --quiet auth configure-docker europe-docker.pkg.dev
 
-      # Generate the image tag combining the commit hash and timestamp
       - name: Generate image tag
         id: generate_tag
         run: |
           echo "IMAGE_TAG_SHEFFESSIONS_API_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-      # Build and push the Docker image using the generated tag
       - name: 'Build and push Docker image'
         working-directory: ./backend/sheffessions_api
         run: |
           docker build \
-            --build-arg MYSQL_DATABASE_STAGING=${{ secrets.MYSQL_DATABASE_STAGING }} \
-            --build-arg MYSQL_ROOT_PASSWORD_STAGING=${{ secrets.MYSQL_ROOT_PASSWORD_STAGING }} \
             -t europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }} .
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging:sheffessions_api_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_api_staging }}
 
@@ -183,18 +304,15 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      # Configure Docker to use gcloud command-line tool as a credential helper for Artifact Registry
       - name: 'Configure Docker for Artifact Registry'
         run: |
           gcloud --quiet auth configure-docker europe-docker.pkg.dev
 
-      # Generate the image tag combining the commit hash and timestamp
       - name: Generate image tag
         id: generate_tag
         run: |
           echo "IMAGE_TAG_SHEFFESSIONS_FE_STAGING=${GITHUB_SHA}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-      # Build and push the Docker image using the generated tag
       - name: 'Build and push Docker image'
         working-directory: ./frontend/sheffessions
         run: |
@@ -204,8 +322,10 @@ jobs:
           docker push europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging:sheffessions_fe_staging-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe_staging }}
 
   staging-deploy-sheffessions_api:
-    needs: staging-build-sheffessions_api
+    needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
     runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_STAGING }}@/postgres?host=/cloudsql/sheffessions-staging:europe-west2:sheffessions-staging-postgresql&sslmode=disable&search_path=public
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -221,7 +341,6 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      # Deploy to Cloud Run using the generated image tag
       - name: 'Deploy to Cloud Run (API)'
         run: |
           gcloud run deploy sheffessions-api-staging \
@@ -233,10 +352,12 @@ jobs:
             --memory=128Mi \
             --cpu=1 \
             --timeout=300s \
-            --concurrency=80
-
+            --concurrency=80 \
+            --add-cloudsql-instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql \
+            --set-env-vars=POSTGRESQL_URL=${POSTGRESQL_URL}
+  
   staging-deploy-sheffessions_fe:
-    needs: staging-build-sheffessions_fe
+    needs: [ staging-build-sheffessions_api, staging-build-sheffessions_fe ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -253,7 +374,6 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      # Deploy to Cloud Run using the generated image tag
       - name: 'Deploy to Cloud Run (API)'
         run: |
           gcloud run deploy sheffessions-fe-staging \

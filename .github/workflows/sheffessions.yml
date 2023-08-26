@@ -80,10 +80,95 @@ jobs:
             -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe}} .
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_fe:sheffessions_fe-${{ steps.generate_tag.outputs.image_tag_sheffessions_fe }}
 
-  production-deploy-sheffessions_api:
+  production-database-migrations:
+    runs-on: ubuntu-latest
     needs: [
       production-build-sheffessions_api,
       production-build-sheffessions_fe
+    ]
+    steps:
+      - name: 'Install Migrate CLI'
+        run: |
+          curl -L -o migrate.linux-amd64.tar.gz https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
+          CHECKSUM="b92fe73d3fc9ea2bd1e02c5b7840c16268e78956c0c05f6bdb90a78c42637020"
+          echo "$CHECKSUM  migrate.linux-amd64.tar.gz" | sha256sum --check
+          if [[ $? -ne 0 ]]; then
+            echo "Checksum verification failed!"
+            exit 1
+          fi
+          tar xvz -f migrate.linux-amd64.tar.gz
+          mv migrate.linux-amd64 /usr/local/bin/migrate
+
+      - name: Backup PostgreSQL Database
+        run: |
+          TIMESTAMP=$(date --utc +%Y-%m-%dT%H:%M:%SZ)  # store current UTC timestamp
+          gcloud sql backups create --instance=sheffessions-postgresql
+          echo "BACKUP_TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+
+      - name: List Backups for PostgreSQL Database
+        run: |
+          RETRY_COUNT=0
+          MAX_RETRIES=5
+          SLEEP_DURATION=30
+          while [[ -z "$BACKUP_ID" && $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+            BACKUP_ID=$(gcloud sql backups list --instance=sheffessions-postgresql --filter="startTime>'$BACKUP_TIMESTAMP'" --sort-by="~creationTimestamp" --limit=1 --format="get(id)")
+            if [[ -z "$BACKUP_ID" ]]; then
+              echo "Backup not found for attempt $((RETRY_COUNT+1)). Retrying in $SLEEP_DURATION seconds..."
+              sleep $SLEEP_DURATION
+              ((RETRY_COUNT++))
+            fi
+          done
+
+          if [[ -z "$BACKUP_ID" ]]; then
+            echo "Error: No backup found that was created after $BACKUP_TIMESTAMP after $MAX_RETRIES attempts"
+            exit 1
+          fi
+
+          echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
+
+      - name: List Migrations
+        working-directory: ./backend/sheffessions_api
+        run: |
+          echo "MIGRATIONS_LIST=$(find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$' | sort | tr '\n' ';')" >> $GITHUB_ENV
+
+      - name: Apply Migrations Iteratively
+        working-directory: ./backend/sheffessions_api
+        run: |
+          psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
+          IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
+          if [[ -z "${MIGRATIONS[*]}" ]]; then
+            echo "No migrations to apply."
+            exit 0
+          fi
+          for migration in "${MIGRATIONS[@]}"; do
+            if [[ $migration == *".up.sql" ]]; then
+              echo "==== Applying migration: $migration ===="
+              migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
+              if [ $? -ne 0 ]; then
+                echo "Migration $migration failed. Rolling back..."
+                migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Check Database State
+        if: failure()
+        working-directory: ./backend/sheffessions_api
+        run: |
+          echo "Checking if the database is in a dirty state"
+          DIRTY_STATE=$(psql ${POSTGRESQL_URL} -t -c "SELECT dirty FROM schema_migrations WHERE dirty = true LIMIT 1")
+          if [[ "$DIRTY_STATE" == "true" ]]; then
+            echo "The database is in a dirty state!"
+            exit 1
+          fi
+          echo "Database is in a clean state."
+
+  production-deploy-sheffessions_api:
+    needs: [
+      production-build-sheffessions_api,
+      production-build-sheffessions_fe,
+      production-database-migrations
     ]
     runs-on: ubuntu-latest
     steps:
