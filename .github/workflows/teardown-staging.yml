@@ -9,7 +9,7 @@ on:
     ]
 
 jobs:
-  teardown-staging:
+  cleanup-staging:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,10 +24,10 @@ jobs:
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
 
-    - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
-      run: |
-        gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
-        gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
+    # - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
+    #   run: |
+    #     gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
+    #     gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
 
     - name: 'Delete old Docker images from Artifact Registry'
       run: |
@@ -40,28 +40,35 @@ jobs:
           gcloud beta artifacts docker images delete $IMAGE
         done
 
-  remove-unused-artifacts:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - id: 'auth'
-      uses: 'google-github-actions/auth@v1'
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
-
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v1'
-
-    - name: 'Delete old Docker images from Artifact Registry'
-      run: |
-        # List the images in the registry, sorted by creation time (newest first), and filter out the N latest.
-        # Adjust the number in `tail -n +N` to keep the last N versions. For example, to keep the last 5, you would use `tail -n +6`.
         IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api --format='get(name)' --sort-by=~timestamp | tail -n +6)
-        
+
         # Delete each of the images
         for IMAGE in $IMAGES_TO_DELETE; do
           gcloud beta artifacts docker images delete $IMAGE
+        done
+
+    # cleanup-production:
+    # runs-on: ubuntu-latest
+    #
+    # steps:
+    # - name: Checkout code
+    #   uses: actions/checkout@v3
+    #
+    # - id: 'auth'
+    #   uses: 'google-github-actions/auth@v1'
+    #   with:
+    #     credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
+    #
+    # - name: 'Set up Cloud SDK'
+    #   uses: 'google-github-actions/setup-gcloud@v1'
+    #
+    # - name: 'Delete old Docker images from Artifact Registry'
+    #   run: |
+    #     # List the images in the registry, sorted by creation time (newest first), and filter out the N latest.
+    #     # Adjust the number in `tail -n +N` to keep the last N versions. For example, to keep the last 5, you would use `tail -n +6`.
+    #     IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api --format='get(name)' --sort-by=~timestamp | tail -n +6)
+    #     
+    #     # Delete each of the images
+    #     for IMAGE in $IMAGES_TO_DELETE; do
+    #       gcloud beta artifacts docker images delete $IMAGE
         done
