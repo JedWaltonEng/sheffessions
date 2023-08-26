@@ -34,7 +34,7 @@ jobs:
             --include-tags \
             --format='value(TAGS)' | \
             grep -E '^[^-]+-[0-9a-f]{40}-[0-9]{8}-[0-9]{6}$' | \
-            sort -t '-' -k3,3r -k4,4r | tail -n +6)
+            sort -t '-' -k3,3r -k4,4r | tail -n +5)
           if [ -z "$tags" ]; then
             echo "No images to clean"
           else
