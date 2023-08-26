@@ -181,7 +181,7 @@ jobs:
         run: |
           RETRY_COUNT=0
           MAX_RETRIES=5
-          SLEEP_DURATION=30 # Sleep for 30 seconds between retries
+          SLEEP_DURATION=30
           while [[ -z "$BACKUP_ID" && $RETRY_COUNT -lt $MAX_RETRIES ]]; do
             BACKUP_ID=$(gcloud sql backups list --instance=sheffessions-staging-postgresql --filter="startTime>'$BACKUP_TIMESTAMP'" --sort-by="~creationTimestamp" --limit=1 --format="get(id)")
             if [[ -z "$BACKUP_ID" ]]; then
@@ -224,29 +224,19 @@ jobs:
             fi
           done
 
-
-      - name: Rollback Migration on Failure
+      - name: Check Database State
         if: failure()
         working-directory: ./backend/sheffessions_api
         run: |
-          echo "An error occurred earlier in the workflow. Rolling back last migration..."
-          MIGRATION_VERSION=$(psql ${POSTGRESQL_URL} -t -c "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")
-
-          if [[ -z "$MIGRATION_VERSION" ]]; then
-            echo "No migrations applied yet. Skipping rollback."
-            exit 0
-          fi
-
-          migrate -database ${POSTGRESQL_URL} -path db/migrations force $MIGRATION_VERSION
-          migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
-
+          echo "Checking if the database is in a dirty state"
           DIRTY_STATE=$(psql ${POSTGRESQL_URL} -t -c "SELECT dirty FROM schema_migrations WHERE dirty = true LIMIT 1")
           if [[ "$DIRTY_STATE" == "true" ]]; then
             echo "The database is in a dirty state!"
-            gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
+            # We only restore automatically in staging. This can be uncommented in an emergency
+            # gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
             exit 1
           fi
-          echo "Rollback successful and database is clean."
+          echo "Database is in a clean state."
 
 
       - name: Run sheffessions_api Integration Tests
