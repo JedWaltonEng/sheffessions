@@ -3,10 +3,10 @@ name: Tear Down Staging Instance
 on:
   schedule:
     - cron: '0 4 * * *'  # This runs at 4 AM every day
-  push:
-    branches: [
-      "feature/rollbacks"
-    ]
+  # push:
+  #   branches: [
+  #     "feature/rollbacks"
+  #   ]
 
 jobs:
   cleanup-staging:
@@ -32,22 +32,20 @@ jobs:
     #     gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
     #     gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
 
-    - name: 'Delete old Docker images from Artifact Registry'
+    - name: Delete old images from sheffessions_api_staging
       run: |
-        # List the images in the registry, sorted by creation time (newest first), and filter out the N latest.
-        # Adjust the number in `tail -n +N` to keep the last N versions. For example, to keep the last 5, you would use `tail -n +6`.
-        IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging --format='get(name)' --sort-by=~timestamp --quiet | tail -n +6)
-        
-        # Delete each of the images
-        for IMAGE in $IMAGES_TO_DELETE; do
-          gcloud beta artifacts docker images delete $IMAGE --quiet
+        # Get the list of digests, sort them based on timestamp and exclude the latest 5
+        DIGESTS_TO_DELETE=$(gcloud beta artifacts docker images list --repository=europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging --format="get(digest, uploadTime.date())" | sort -k2 -r | tail -n +6 | awk '{print $1}')
+        for DIGEST in $DIGESTS_TO_DELETE; do
+          gcloud beta artifacts docker images delete "europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging@$DIGEST" --delete-tags --quiet
         done
 
-        IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging --format='get(name)' --sort-by=~timestamp --quiet | tail -n +6)
-
-        # Delete each of the images
-        for IMAGE in $IMAGES_TO_DELETE; do
-          gcloud beta artifacts docker images delete $IMAGE --quiet
+    - name: Delete old images from sheffessions_fe_staging
+      run: |
+        # Get the list of digests, sort them based on timestamp and exclude the latest 5
+        DIGESTS_TO_DELETE=$(gcloud beta artifacts docker images list --repository=europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging --format="get(digest, uploadTime.date())" | sort -k2 -r | tail -n +6 | awk '{print $1}')
+        for DIGEST in $DIGESTS_TO_DELETE; do
+          gcloud beta artifacts docker images delete "europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging@$DIGEST" --delete-tags --quiet
         done
 
     # cleanup-production:
