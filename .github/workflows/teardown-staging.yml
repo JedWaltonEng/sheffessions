@@ -25,12 +25,15 @@ jobs:
 
     - name: Delete old images from sheffessions_api_staging
       run: |
+        set -e
         # Get the list of images
         IMAGES=$(gcloud artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging --format='value(image)')
+        echo "API images: $IMAGES"
         for IMAGE in $IMAGES; do
           DETAILS=$(gcloud artifacts docker images describe $IMAGE --format='value(image.digest, createTime)')
           echo $DETAILS >> api_image_details.txt
         done
+        [ -f api_image_details.txt ] || touch api_image_details.txt
         DIGESTS_TO_DELETE=$(sort -k2 -r api_image_details.txt | tail -n +6 | awk '{print $1}')
         for DIGEST in $DIGESTS_TO_DELETE; do
           gcloud beta artifacts docker images delete "europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api_staging@$DIGEST" --quiet
@@ -38,16 +41,20 @@ jobs:
 
     - name: Delete old images from sheffessions_fe_staging
       run: |
+        set -e
         # Get the list of images
         IMAGES=$(gcloud artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging --format='value(image)')
+        echo "FE images: $IMAGES"
         for IMAGE in $IMAGES; do
           DETAILS=$(gcloud artifacts docker images describe $IMAGE --format='value(image.digest, createTime)')
           echo $DETAILS >> fe_image_details.txt
         done
+        [ -f fe_image_details.txt ] || touch fe_image_details.txt
         DIGESTS_TO_DELETE=$(sort -k2 -r fe_image_details.txt | tail -n +6 | awk '{print $1}')
         for DIGEST in $DIGESTS_TO_DELETE; do
           gcloud beta artifacts docker images delete "europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging@$DIGEST" --quiet
         done
+
 
     # - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
     #   run: |
