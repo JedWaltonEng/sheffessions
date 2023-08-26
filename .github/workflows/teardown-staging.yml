@@ -61,9 +61,12 @@ jobs:
 
     - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
       run: |
-        gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
-        gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
-
+        if gcloud sql instances describe sheffessions-staging-postgresql --project=sheffessions-staging > /dev/null 2>&1; then
+          gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
+          gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
+        else
+          echo "Cloud SQL instance sheffessions-staging-postgresql does not exist or has been deleted."
+        fi
 
   cleanup-production:
     runs-on: ubuntu-latest
@@ -74,7 +77,7 @@ jobs:
     - id: 'auth'
       uses: 'google-github-actions/auth@v1'
       with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTIONS }}'
+        credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
 
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
