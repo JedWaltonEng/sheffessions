@@ -3,15 +3,10 @@ name: Tear Down Staging Instance
 on:
   schedule:
     - cron: '0 4 * * *'  # This runs at 4 AM every day
-  # push:
-    # branches: [
-    #   "feature/rollbacks"
-    # ]
 
 jobs:
-  teardown-staging:
+  cleanup-staging:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -24,25 +19,53 @@ jobs:
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
 
+    - name: Install gcloud beta components
+      run: gcloud components install beta --quiet
+
+    - name: Cleanup old Docker images
+      run: |
+        _cleanup() {
+          image_path="$1-docker.pkg.dev/$2/$3/$4"
+          tags=$(gcloud artifacts docker images list $image_path \
+            --include-tags \
+            --format='value(TAGS)' | \
+            grep -E '^[^-]+-[0-9a-f]{40}-[0-9]{8}-[0-9]{6}$' | \
+            sort -t '-' -k3,3r -k4,4r | tail -n +6)
+          if [ -z "$tags" ]; then
+            echo "No images to clean"
+          else
+            echo "Images found: $tags"
+            for tag in $tags; do
+              echo "Deleting image: $image_path:$tag"
+              gcloud artifacts docker images delete "$image_path:$tag" --quiet
+            done
+          fi
+        }
+
+        location="europe"
+        project_id="sheffessions-staging"
+        repository_id="sheffessions-docker-repository"
+        image_name="sheffessions_api_staging" # Change as needed
+
+        _cleanup $location $project_id $repository_id $image_name
+
+        image_name="sheffessions_fe_staging" # Change for the second cleanup
+
+        _cleanup $location $project_id $repository_id $image_name
+
+        echo "DONE"
+
     - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
       run: |
-        gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
-        gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
+        if gcloud sql instances describe sheffessions-staging-postgresql --project=sheffessions-staging > /dev/null 2>&1; then
+          gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
+          gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
+        else
+          echo "Cloud SQL instance sheffessions-staging-postgresql does not exist or has been deleted."
+        fi
 
-    - name: 'Delete old Docker images from Artifact Registry'
-      run: |
-        # List the images in the registry, sorted by creation time (newest first), and filter out the N latest.
-        # Adjust the number in `tail -n +N` to keep the last N versions. For example, to keep the last 5, you would use `tail -n +6`.
-        IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_api --format='get(name)' --sort-by=~timestamp | tail -n +6)
-        
-        # Delete each of the images
-        for IMAGE in $IMAGES_TO_DELETE; do
-          gcloud beta artifacts docker images delete $IMAGE
-        done
-
-  remove-unused-artifacts:
+  cleanup-production:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -50,18 +73,43 @@ jobs:
     - id: 'auth'
       uses: 'google-github-actions/auth@v1'
       with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+        credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
 
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
 
-    - name: 'Delete old Docker images from Artifact Registry'
+    - name: Install gcloud beta components
+      run: gcloud components install beta --quiet
+
+    - name: Cleanup old Docker images
       run: |
-        # List the images in the registry, sorted by creation time (newest first), and filter out the N latest.
-        # Adjust the number in `tail -n +N` to keep the last N versions. For example, to keep the last 5, you would use `tail -n +6`.
-        IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api --format='get(name)' --sort-by=~timestamp | tail -n +6)
-        
-        # Delete each of the images
-        for IMAGE in $IMAGES_TO_DELETE; do
-          gcloud beta artifacts docker images delete $IMAGE
-        done
+        _cleanup() {
+          image_path="$1-docker.pkg.dev/$2/$3/$4"
+          tags=$(gcloud artifacts docker images list $image_path \
+            --include-tags \
+            --format='value(TAGS)' | \
+            grep -E '^[^-]+-[0-9a-f]{40}-[0-9]{8}-[0-9]{6}$' | \
+            sort -t '-' -k3,3r -k4,4r | tail -n +6)
+          if [ -z "$tags" ]; then
+            echo "No images to clean"
+          else
+            echo "Images found: $tags"
+            for tag in $tags; do
+              echo "Deleting image: $image_path:$tag"
+              gcloud artifacts docker images delete "$image_path:$tag" --quiet
+            done
+          fi
+        }
+
+        location="europe"
+        project_id="sheffessions"
+        repository_id="sheffessions-docker-repository"
+        image_name="sheffessions_api" # Change as needed
+
+        _cleanup $location $project_id $repository_id $image_name
+
+        image_name="sheffessions_fe" # Change for the second cleanup
+
+        _cleanup $location $project_id $repository_id $image_name
+
+        echo "DONE"
