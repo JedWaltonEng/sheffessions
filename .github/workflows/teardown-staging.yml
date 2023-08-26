@@ -3,10 +3,10 @@ name: Tear Down Staging Instance
 on:
   schedule:
     - cron: '0 4 * * *'  # This runs at 4 AM every day
-  # push:
-  #   branches: [
-  #     "feature/rollbacks"
-  #   ]
+  push:
+    branches: [
+      "feature/rollbacks"
+    ]
 
 jobs:
   cleanup-staging:
@@ -27,11 +27,6 @@ jobs:
     - name: Install gcloud beta components
       run: gcloud components install beta --quiet
 
-    # - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
-    #   run: |
-    #     gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
-    #     gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
-
     - name: Delete old images from sheffessions_api_staging
       run: |
         # Get the list of digests, sort them based on timestamp and exclude the latest 5
@@ -47,6 +42,11 @@ jobs:
         for DIGEST in $DIGESTS_TO_DELETE; do
           gcloud beta artifacts docker images delete "europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe_staging@$DIGEST" --delete-tags --quiet
         done
+
+    # - name: 'Tear Down PostgreSQL Instance on Cloud SQL'
+    #   run: |
+    #     gcloud sql instances patch sheffessions-staging-postgresql --no-deletion-protection
+    #     gcloud sql instances delete sheffessions-staging-postgresql --project=sheffessions-staging --quiet
 
     # cleanup-production:
     # runs-on: ubuntu-latest
