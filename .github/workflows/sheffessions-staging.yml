@@ -233,7 +233,7 @@ jobs:
           if [[ "$DIRTY_STATE" == "true" ]]; then
             echo "The database is in a dirty state!"
             # We only restore automatically in staging. This can be uncommented in an emergency
-            # gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
+            gcloud sql backups restore $BACKUP_ID --restore-instance=sheffessions-staging-postgresql
             exit 1
           fi
           echo "Database is in a clean state."

@@ -5,9 +5,8 @@ on:
     - cron: '0 4 * * *'  # This runs at 4 AM every day
   push:
     branches: [
-      "feature/rollback"
+      "feature/rollbacks"
     ]
-
 
 jobs:
   teardown-staging:
