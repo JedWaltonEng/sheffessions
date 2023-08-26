@@ -126,43 +126,43 @@ jobs:
 
           echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
 
-    - name: List Migrations
-      working-directory: ./backend/sheffessions_api
-      run: |
-        echo "MIGRATIONS_LIST=$(find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$' | sort | tr '\n' ';')" >> $GITHUB_ENV
+      - name: List Migrations
+        working-directory: ./backend/sheffessions_api
+        run: |
+          echo "MIGRATIONS_LIST=$(find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$' | sort | tr '\n' ';')" >> $GITHUB_ENV
 
-    - name: Apply Migrations Iteratively
-      working-directory: ./backend/sheffessions_api
-      run: |
-        psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
-        IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
-        if [[ -z "${MIGRATIONS[*]}" ]]; then
-          echo "No migrations to apply."
-          exit 0
-        fi
-        for migration in "${MIGRATIONS[@]}"; do
-          if [[ $migration == *".up.sql" ]]; then
-            echo "==== Applying migration: $migration ===="
-            migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
-            if [ $? -ne 0 ]; then
-              echo "Migration $migration failed. Rolling back..."
-              migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
-              exit 1
-            fi
+      - name: Apply Migrations Iteratively
+        working-directory: ./backend/sheffessions_api
+        run: |
+          psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
+          IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
+          if [[ -z "${MIGRATIONS[*]}" ]]; then
+            echo "No migrations to apply."
+            exit 0
           fi
-        done
+          for migration in "${MIGRATIONS[@]}"; do
+            if [[ $migration == *".up.sql" ]]; then
+              echo "==== Applying migration: $migration ===="
+              migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
+              if [ $? -ne 0 ]; then
+                echo "Migration $migration failed. Rolling back..."
+                migrate -database ${POSTGRESQL_URL} -path db/migrations down 1
+                exit 1
+              fi
+            fi
+          done
 
-    - name: Check Database State
-      if: failure()
-      working-directory: ./backend/sheffessions_api
-      run: |
-        echo "Checking if the database is in a dirty state"
-        DIRTY_STATE=$(psql ${POSTGRESQL_URL} -t -c "SELECT dirty FROM schema_migrations WHERE dirty = true LIMIT 1")
-        if [[ "$DIRTY_STATE" == "true" ]]; then
-          echo "The database is in a dirty state!"
-          exit 1
-        fi
-        echo "Database is in a clean state."
+      - name: Check Database State
+        if: failure()
+        working-directory: ./backend/sheffessions_api
+        run: |
+          echo "Checking if the database is in a dirty state"
+          DIRTY_STATE=$(psql ${POSTGRESQL_URL} -t -c "SELECT dirty FROM schema_migrations WHERE dirty = true LIMIT 1")
+          if [[ "$DIRTY_STATE" == "true" ]]; then
+            echo "The database is in a dirty state!"
+            exit 1
+          fi
+          echo "Database is in a clean state."
 
   production-deploy-sheffessions_api:
     needs: [
