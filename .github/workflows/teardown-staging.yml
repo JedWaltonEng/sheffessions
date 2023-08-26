@@ -43,7 +43,7 @@ jobs:
           gcloud beta artifacts docker images delete $IMAGE --quiet
         done
 
-        IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api --format='get(name)' --sort-by=~timestamp --quiet | tail -n +6)
+        IMAGES_TO_DELETE=$(gcloud beta artifacts docker images list europe-docker.pkg.dev/sheffessions-staging/sheffessions-docker-repository/sheffessions_fe --format='get(name)' --sort-by=~timestamp --quiet | tail -n +6)
 
         # Delete each of the images
         for IMAGE in $IMAGES_TO_DELETE; do
