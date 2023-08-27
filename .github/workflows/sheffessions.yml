@@ -4,7 +4,6 @@ on:
   push:
     branches: [
       "main",
-      "feature/productiondeployments"
     ]
 
 jobs:
@@ -119,7 +118,8 @@ jobs:
             #   --storage-auto-increase \
             #   --backup \
             #   --backup-start-time=04:00 \
-            #   --require-ssl
+            #   --require-ssl \
+
             gcloud sql users set-password postgres --instance=sheffessions-postgresql --password=${POSTGRESQL_PASSWORD_PRODUCTION}
           else
             echo "Instance sheffessions-staging-postgresql already exists."
