@@ -170,43 +170,45 @@ jobs:
           tar xvz -f migrate.linux-amd64.tar.gz
           mv migrate.linux-amd64 /usr/local/bin/migrate
 
-      - name: Backup PostgreSQL Database
-        run: |
-          TIMESTAMP=$(date --utc +%Y-%m-%dT%H:%M:%SZ)  # store current UTC timestamp
-          gcloud sql backups create --instance=sheffessions-staging-postgresql
-          echo "BACKUP_TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
-
-      - name: List Backups for PostgreSQL Database
-        run: |
-          RETRY_COUNT=0
-          MAX_RETRIES=5
-          SLEEP_DURATION=30
-          while [[ -z "$BACKUP_ID" && $RETRY_COUNT -lt $MAX_RETRIES ]]; do
-            BACKUP_ID=$(gcloud sql backups list --instance=sheffessions-staging-postgresql --filter="startTime>'$BACKUP_TIMESTAMP'" --sort-by="~creationTimestamp" --limit=1 --format="get(id)")
-            if [[ -z "$BACKUP_ID" ]]; then
-              echo "Backup not found for attempt $((RETRY_COUNT+1)). Retrying in $SLEEP_DURATION seconds..."
-              sleep $SLEEP_DURATION
-              ((RETRY_COUNT++))
-            fi
-          done
-
-          if [[ -z "$BACKUP_ID" ]]; then
-            echo "Error: No backup found that was created after $BACKUP_TIMESTAMP after $MAX_RETRIES attempts"
-            exit 1
-          fi
-
-          echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
+      # - name: Backup PostgreSQL Database
+      #   run: |
+      #     TIMESTAMP=$(date --utc +%Y-%m-%dT%H:%M:%SZ)  # store current UTC timestamp
+      #     gcloud sql backups create --instance=sheffessions-staging-postgresql
+      #     echo "BACKUP_TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+      #
+      # - name: List Backups for PostgreSQL Database
+      #   run: |
+      #     RETRY_COUNT=0
+      #     MAX_RETRIES=5
+      #     SLEEP_DURATION=30
+      #     while [[ -z "$BACKUP_ID" && $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+      #       BACKUP_ID=$(gcloud sql backups list --instance=sheffessions-staging-postgresql --filter="startTime>'$BACKUP_TIMESTAMP'" --sort-by="~creationTimestamp" --limit=1 --format="get(id)")
+      #       if [[ -z "$BACKUP_ID" ]]; then
+      #         echo "Backup not found for attempt $((RETRY_COUNT+1)). Retrying in $SLEEP_DURATION seconds..."
+      #         sleep $SLEEP_DURATION
+      #         ((RETRY_COUNT++))
+      #       fi
+      #     done
+      #
+      #     if [[ -z "$BACKUP_ID" ]]; then
+      #       echo "Error: No backup found that was created after $BACKUP_TIMESTAMP after $MAX_RETRIES attempts"
+      #       exit 1
+      #     fi
+      #
+      #     echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
 
       - name: List Migrations
         working-directory: ./backend/sheffessions_api
         run: |
           echo "MIGRATIONS_LIST=$(find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$' | sort | tr '\n' ';')" >> $GITHUB_ENV
+          echo "$MIGRATIONS_LIST"
 
       - name: Apply Migrations Iteratively
         working-directory: ./backend/sheffessions_api
         run: |
           psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
           # IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
+          echo "MIGRATIONS_LIST is: ${{ env.MIGRATIONS_LIST }}"
           IFS=';' read -ra MIGRATIONS <<< "${{ env.MIGRATIONS_LIST }}"
           if [[ -z "${MIGRATIONS[*]}" ]]; then
             echo "No migrations to apply."
