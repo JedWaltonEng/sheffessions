@@ -86,7 +86,7 @@ jobs:
       production-build-sheffessions_fe
     ]
     env:
-      POSTGRESQL_PASSWORD_STAGING: ${{ secrets.POSTGRESQL_PASSWORD_PRODUCTION }}
+      POSTGRESQL_PASSWORD_PRODUCTION: ${{ secrets.POSTGRESQL_PASSWORD_PRODUCTION }}
       POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_PRODUCTION }}@localhost:5432/postgres?sslmode=disable
     steps:
       - name: Checkout code
@@ -124,7 +124,7 @@ jobs:
           else
             echo "Instance sheffessions-staging-postgresql already exists."
             echo "Skipping creation."
-            echo "Updating password to POSTGRESQL_PASSWORD_STAGING"
+            echo "Updating password to POSTGRESQL_PASSWORD_PRODUCTION"
             gcloud sql users set-password postgres --instance=sheffessions-postgresql --password=${POSTGRESQL_PASSWORD_PRODUCTION}
           fi
 
