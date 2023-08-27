@@ -3,7 +3,8 @@ name: Sheffessions pipeline
 on:
   push:
     branches: [
-      "main"
+      "main",
+      "feature/productiondeployments"
     ]
 
 jobs:
@@ -39,8 +40,6 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: |
           docker build \
-            --build-arg MYSQL_DATABASE_PRODUCTION=${{ secrets.MYSQL_DATABASE_PRODUCTION }} \
-            --build-arg MYSQL_ROOT_PASSWORD_PRODUCTION=${{ secrets.MYSQL_ROOT_PASSWORD_PRODUCTION }} \
             -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api }} .
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api }}
 
@@ -87,6 +86,20 @@ jobs:
       production-build-sheffessions_fe
     ]
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
       - name: 'Install Migrate CLI'
         run: |
           curl -L -o migrate.linux-amd64.tar.gz https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
