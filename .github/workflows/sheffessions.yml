@@ -85,6 +85,9 @@ jobs:
       production-build-sheffessions_api,
       production-build-sheffessions_fe
     ]
+    env:
+      POSTGRESQL_PASSWORD_STAGING: ${{ secrets.POSTGRESQL_PASSWORD_PRODUCTION }}
+      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_PRODUCTION }}@localhost:5432/postgres?sslmode=disable
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -99,6 +102,28 @@ jobs:
 
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
+
+      - name: 'Construct POSTGRESQL_URL and Run sheffessions_api'
+        working-directory: ./backend/sheffessions_api
+        run: |
+          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.6.1/cloud-sql-proxy.linux.amd64
+          chmod +x cloud_sql_proxy
+          ./cloud_sql_proxy -instances=sheffessions:europe-west2:sheffessions-postgresql=tcp:5432 &
+
+          echo "Waiting for Cloud SQL Proxy to be up..."
+          for i in {1..30}; do
+            if netstat -an | grep "5432" > /dev/null; then
+              echo "Cloud SQL Proxy started!"
+              break
+            fi
+            sleep 1
+          done
+
+          go build -o server main.go
+          ./server &
+
+          sleep 10
+
 
       - name: 'Install Migrate CLI'
         run: |
@@ -212,7 +237,9 @@ jobs:
             --timeout=300s \
             --concurrency=80 \
             --min-instances=0 \
-            --max-instances=10
+            --max-instances=10 \
+            --add-cloudsql-instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql \
+            --set-env-vars=POSTGRESQL_URL=${POSTGRESQL_URL}
 
   production-deploy-sheffessions_fe:
     needs: [
