@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [ 
       "staging",
+      "feature/productiondeployments"
     ]
 
 jobs:
@@ -201,7 +202,7 @@ jobs:
       - name: Apply Migrations Iteratively
         working-directory: ./backend/sheffessions_api
         run: |
-          psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
+          # psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
           IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
           if [[ -z "${MIGRATIONS[*]}" ]]; then
             echo "No migrations to apply."
