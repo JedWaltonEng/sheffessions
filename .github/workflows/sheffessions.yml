@@ -210,7 +210,7 @@ jobs:
     ]
     runs-on: ubuntu-latest
     env:
-      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_STAGING }}@/postgres?host=/cloudsql/sheffessions-staging:europe-west2:sheffessions-staging-postgresql&sslmode=disable&search_path=public
+      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_PRODUCTION }}@/postgres?host=/cloudsql/sheffessions:europe-west2:sheffessions-postgresql&sslmode=disable&search_path=public
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
