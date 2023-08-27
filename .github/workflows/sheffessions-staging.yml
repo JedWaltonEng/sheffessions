@@ -196,15 +196,6 @@ jobs:
       #     fi
       #
       #     echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
-      - name: Test and List Migrations
-        working-directory: ./backend/sheffessions_api
-        run: |
-          psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
-          
-          # Simply find the .up.sql files without the grep
-          MIGRATIONS=$(find db/migrations -name '*.up.sql')
-          
-          echo "Migrations found: $MIGRATIONS"
 
       - name: List and Apply Migrations Directly
         working-directory: ./backend/sheffessions_api
@@ -212,7 +203,7 @@ jobs:
           psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
           
           # List migrations directly here
-          MIGRATIONS=$(find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$' | sort | tr '\n' ';')
+          MIGRATIONS=$(find db/migrations -name '*.up.sql')
           
           echo "Migrations found: $MIGRATIONS"
           
