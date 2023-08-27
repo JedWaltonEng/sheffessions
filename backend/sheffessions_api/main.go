@@ -5,18 +5,19 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sheffessions/api/middleware"
 	"sheffessions/api/store"
 
 	_ "github.com/lib/pq"
 )
 
-func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Received %s request for %s from %s\n", r.Method, r.URL.Path, r.RemoteAddr)
-		next(w, r)
-		log.Println("Handled the request.")
-	}
-}
+// func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		log.Printf("Received %s request for %s from %s\n", r.Method, r.URL.Path, r.RemoteAddr)
+// 		next(w, r)
+// 		log.Println("Handled the request.")
+// 	}
+// }
 
 type Confession struct {
 	Content            string `json:"content"`
@@ -41,7 +42,7 @@ func handleConfessions(w http.ResponseWriter, r *http.Request) {
 		}
 		confessions = append(confessions, confession)
 		// Save to PostgreSQL
-		result, err := store.Db.Exec("INSERT INTO confessions (confession_text, source_of_confession) VALUES ($1, $2)", confession.Content, confession.SourceOfConfession)
+		result, err := store.DB.Exec("INSERT INTO confessions (confession_text, source_of_confession) VALUES ($1, $2)", confession.Content, confession.SourceOfConfession)
 		if err != nil {
 			log.Println("Failed to insert confession to database:", err)
 			http.Error(w, "Failed to save confession", http.StatusInternalServerError)
@@ -69,9 +70,9 @@ func enableCors(w *http.ResponseWriter) {
 
 func main() {
 	store.InitDB()
-	defer store.Db.Close()
+	defer store.DB.Close()
 
-	http.HandleFunc("/confessions", loggingMiddleware(handleConfessions))
+	http.HandleFunc("/confessions", middleware.Logging(handleConfessions))
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-var Db *sql.DB
+var DB *sql.DB
 
 func InitDB() {
 	var err error
@@ -14,12 +14,12 @@ func InitDB() {
 	if connectionString == "" {
 		log.Fatal("POSTGRESQL_URL environment variable is not set")
 	}
-	Db, err = sql.Open("postgres", connectionString)
+	DB, err = sql.Open("postgres", connectionString)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = Db.Ping() // This will check if the connection is successful
+	err = DB.Ping() // This will check if the connection is successful
 	if err != nil {
 		log.Fatal(err)
 	}
