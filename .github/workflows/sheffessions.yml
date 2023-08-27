@@ -3,7 +3,7 @@ name: Sheffessions pipeline
 on:
   push:
     branches: [
-      "main"
+      "main",
     ]
 
 jobs:
@@ -39,8 +39,6 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: |
           docker build \
-            --build-arg MYSQL_DATABASE_PRODUCTION=${{ secrets.MYSQL_DATABASE_PRODUCTION }} \
-            --build-arg MYSQL_ROOT_PASSWORD_PRODUCTION=${{ secrets.MYSQL_ROOT_PASSWORD_PRODUCTION }} \
             -t europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api }} .
           docker push europe-docker.pkg.dev/sheffessions/sheffessions-docker-repository/sheffessions_api:sheffessions_api-${{ steps.generate_tag.outputs.image_tag_sheffessions_api }}
 
@@ -86,7 +84,72 @@ jobs:
       production-build-sheffessions_api,
       production-build-sheffessions_fe
     ]
+    env:
+      POSTGRESQL_PASSWORD_PRODUCTION: ${{ secrets.POSTGRESQL_PASSWORD_PRODUCTION }}
+      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_PRODUCTION }}@localhost:5432/postgres?sslmode=disable
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS_PRODUCTION }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      - name: 'Check Instance on Cloud SQL exists and update db password'
+        run: |
+          INSTANCE_EXISTS=$(gcloud sql instances list --filter="name:sheffessions-postgresql" --format="get(name)")
+
+          if [[ -z "$INSTANCE_EXISTS" ]]; then
+            # gcloud sql instances create sheffessions-postgresql \
+            #   --project=sheffessions-staging \
+            #   --database-version=POSTGRES_15 \
+            #   --tier=db-f1-micro \
+            #   --region=europe-west2 \
+            #   --availability-type=zonal \
+            #   --storage-type=SSD \
+            #   --storage-size=10 \
+            #   --storage-auto-increase \
+            #   --backup \
+            #   --backup-start-time=04:00 \
+            #   --require-ssl \
+
+            gcloud sql users set-password postgres --instance=sheffessions-postgresql --password=${POSTGRESQL_PASSWORD_PRODUCTION}
+          else
+            echo "Instance sheffessions-staging-postgresql already exists."
+            echo "Skipping creation."
+            echo "Updating password to POSTGRESQL_PASSWORD_PRODUCTION"
+            gcloud sql users set-password postgres --instance=sheffessions-postgresql --password=${POSTGRESQL_PASSWORD_PRODUCTION}
+          fi
+
+      - name: 'Construct POSTGRESQL_URL and Run sheffessions_api'
+        working-directory: ./backend/sheffessions_api
+        run: |
+          wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+          chmod +x cloud_sql_proxy
+          ./cloud_sql_proxy -instances=sheffessions:europe-west2:sheffessions-postgresql=tcp:5432 &
+
+          echo "Waiting for Cloud SQL Proxy to be up..."
+          for i in {1..30}; do
+            if netstat -an | grep "5432" > /dev/null; then
+              echo "Cloud SQL Proxy started!"
+              break
+            fi
+            sleep 1
+          done
+
+          go build -o server main.go
+          ./server &
+
+          sleep 10
+
+
       - name: 'Install Migrate CLI'
         run: |
           curl -L -o migrate.linux-amd64.tar.gz https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
@@ -126,21 +189,23 @@ jobs:
 
           echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
 
-      - name: List Migrations
-        working-directory: ./backend/sheffessions_api
-        run: |
-          echo "MIGRATIONS_LIST=$(find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$' | sort | tr '\n' ';')" >> $GITHUB_ENV
-
-      - name: Apply Migrations Iteratively
+      - name: List and Apply Migrations Directly
         working-directory: ./backend/sheffessions_api
         run: |
           psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
-          IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
-          if [[ -z "${MIGRATIONS[*]}" ]]; then
+
+          # List migrations directly here
+          MIGRATIONS=$(find db/migrations -name '*.up.sql')
+
+          echo "Migrations found: $MIGRATIONS"
+
+          IFS=';' read -ra MIGRATION_ARRAY <<< "$MIGRATIONS"
+          if [[ -z "${MIGRATION_ARRAY[*]}" ]]; then
             echo "No migrations to apply."
             exit 0
           fi
-          for migration in "${MIGRATIONS[@]}"; do
+
+          for migration in "${MIGRATION_ARRAY[@]}"; do
             if [[ $migration == *".up.sql" ]]; then
               echo "==== Applying migration: $migration ===="
               migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
@@ -171,6 +236,8 @@ jobs:
       production-database-migrations
     ]
     runs-on: ubuntu-latest
+    env:
+      POSTGRESQL_URL: postgres://postgres:${{ secrets.POSTGRESQL_PASSWORD_PRODUCTION }}@/postgres?host=/cloudsql/sheffessions:europe-west2:sheffessions-postgresql&sslmode=disable&search_path=public
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -199,7 +266,9 @@ jobs:
             --timeout=300s \
             --concurrency=80 \
             --min-instances=0 \
-            --max-instances=10
+            --max-instances=10 \
+            --add-cloudsql-instances=sheffessions:europe-west2:sheffessions-postgresql \
+            --set-env-vars=POSTGRESQL_URL=${POSTGRESQL_URL}
 
   production-deploy-sheffessions_fe:
     needs: [
