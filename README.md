@@ -12,6 +12,7 @@
     - https://github.com/golang-migrate/migrate/blob/master/database/postgres/TUTORIAL.md
     - `$ sudo apt-get update & sudo apt-get install postgresql-client`
     - `$ psql -h localhost -U postgres -d devdb -p 5432 -c "\d confessions"`
+    `$ cd docker && docker compose up`
 
 Todo:
 -----
