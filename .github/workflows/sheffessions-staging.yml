@@ -196,12 +196,17 @@ jobs:
       #     fi
       #
       #     echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
+      - name: Debug List Migrations
+        working-directory: ./backend/sheffessions_api
+        run: |
+          find db/migrations -name '*.up.sql'
+          echo "----"
+          find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$'
 
       - name: List Migrations
         working-directory: ./backend/sheffessions_api
         run: |
           echo "MIGRATIONS_LIST=$(find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$' | sort | tr '\n' ';')" >> $GITHUB_ENV
-          echo "$MIGRATIONS_LIST"
 
       - name: Apply Migrations Iteratively
         working-directory: ./backend/sheffessions_api
