@@ -5,30 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"database/sql"
+	"sheffessions/api/store"
 
 	_ "github.com/lib/pq"
 )
-
-var db *sql.DB
-
-func initDB() {
-	var err error
-	connectionString := os.Getenv("POSTGRESQL_URL")
-	if connectionString == "" {
-		log.Fatal("POSTGRESQL_URL environment variable is not set")
-	}
-	db, err = sql.Open("postgres", connectionString)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = db.Ping() // This will check if the connection is successful
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
 func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +41,7 @@ func handleConfessions(w http.ResponseWriter, r *http.Request) {
 		}
 		confessions = append(confessions, confession)
 		// Save to PostgreSQL
-		result, err := db.Exec("INSERT INTO confessions (confession_text, source_of_confession) VALUES ($1, $2)", confession.Content, confession.SourceOfConfession)
+		result, err := store.Db.Exec("INSERT INTO confessions (confession_text, source_of_confession) VALUES ($1, $2)", confession.Content, confession.SourceOfConfession)
 		if err != nil {
 			log.Println("Failed to insert confession to database:", err)
 			http.Error(w, "Failed to save confession", http.StatusInternalServerError)
@@ -88,8 +68,8 @@ func enableCors(w *http.ResponseWriter) {
 }
 
 func main() {
-	initDB()
-	defer db.Close()
+	store.InitDB()
+	defer store.Db.Close()
 
 	http.HandleFunc("/confessions", loggingMiddleware(handleConfessions))
 
