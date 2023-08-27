@@ -265,7 +265,7 @@ jobs:
             --concurrency=80 \
             --min-instances=0 \
             --max-instances=10 \
-            --add-cloudsql-instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql \
+            --add-cloudsql-instances=sheffessions:europe-west2:sheffessions-postgresql \
             --set-env-vars=POSTGRESQL_URL=${POSTGRESQL_URL}
 
   production-deploy-sheffessions_fe:
