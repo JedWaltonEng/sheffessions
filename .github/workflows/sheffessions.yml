@@ -4,7 +4,7 @@ on:
   push:
     branches: [
       "main",
-      # "feature/productiondeployments"
+      "feature/productiondeployments"
     ]
 
 jobs:
@@ -189,21 +189,23 @@ jobs:
 
           echo "BACKUP_ID=$BACKUP_ID" >> $GITHUB_ENV
 
-      - name: List Migrations
-        working-directory: ./backend/sheffessions_api
-        run: |
-          echo "MIGRATIONS_LIST=$(find db/migrations -name '*.up.sql' | grep -E '^[0-9]{6}_.+\.up\.sql$' | sort | tr '\n' ';')" >> $GITHUB_ENV
-
-      - name: Apply Migrations Iteratively
+      - name: List and Apply Migrations Directly
         working-directory: ./backend/sheffessions_api
         run: |
           psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
-          IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
-          if [[ -z "${MIGRATIONS[*]}" ]]; then
+
+          # List migrations directly here
+          MIGRATIONS=$(find db/migrations -name '*.up.sql')
+
+          echo "Migrations found: $MIGRATIONS"
+
+          IFS=';' read -ra MIGRATION_ARRAY <<< "$MIGRATIONS"
+          if [[ -z "${MIGRATION_ARRAY[*]}" ]]; then
             echo "No migrations to apply."
             exit 0
           fi
-          for migration in "${MIGRATIONS[@]}"; do
+
+          for migration in "${MIGRATION_ARRAY[@]}"; do
             if [[ $migration == *".up.sql" ]]; then
               echo "==== Applying migration: $migration ===="
               migrate -database ${POSTGRESQL_URL} -path db/migrations up 1
