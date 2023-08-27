@@ -8,7 +8,7 @@ on:
   push:
     branches: [
       "feature/productiondeployments"
-    ] 
+    ]
 
 jobs:
   unit-test-sheffessions_api:
@@ -108,7 +108,7 @@ jobs:
             echo "Instance sheffessions-staging-postgresql already exists."
             echo "Skipping creation." 
             echo "Updating password to POSTGRESQL_PASSWORD_STAGING"
-           gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
+            gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
           fi
 
       - name: Setup Go
@@ -205,7 +205,7 @@ jobs:
       - name: Apply Migrations Iteratively
         working-directory: ./backend/sheffessions_api
         run: |
-          # psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
+          psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
           IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
           if [[ -z "${MIGRATIONS[*]}" ]]; then
             echo "No migrations to apply."
