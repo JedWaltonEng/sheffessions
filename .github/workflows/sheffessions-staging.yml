@@ -206,7 +206,8 @@ jobs:
         working-directory: ./backend/sheffessions_api
         run: |
           psql ${POSTGRESQL_URL} -t -c "SET search_path TO public;"
-          IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
+          # IFS=';' read -ra MIGRATIONS <<< "$MIGRATIONS_LIST"
+          IFS=';' read -ra MIGRATIONS <<< "${{ env.MIGRATIONS_LIST }}"
           if [[ -z "${MIGRATIONS[*]}" ]]; then
             echo "No migrations to apply."
             exit 0
