@@ -107,7 +107,7 @@ jobs:
           INSTANCE_EXISTS=$(gcloud sql instances list --filter="name:sheffessions-postgresql" --format="get(name)")
 
           if [[ -z "$INSTANCE_EXISTS" ]]; then
-            # gcloud sql instances create sheffessions-staging-postgresql \
+            # gcloud sql instances create sheffessions-postgresql \
             #   --project=sheffessions-staging \
             #   --database-version=POSTGRES_15 \
             #   --tier=db-f1-micro \
