@@ -103,6 +103,31 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
+      - name: 'Check Instance on Cloud SQL exists and update db password'
+        run: |
+          INSTANCE_EXISTS=$(gcloud sql instances list --filter="name:sheffessions-postgresql" --format="get(name)")
+
+          if [[ -z "$INSTANCE_EXISTS" ]]; then
+            # gcloud sql instances create sheffessions-staging-postgresql \
+            #   --project=sheffessions-staging \
+            #   --database-version=POSTGRES_15 \
+            #   --tier=db-f1-micro \
+            #   --region=europe-west2 \
+            #   --availability-type=zonal \
+            #   --storage-type=SSD \
+            #   --storage-size=10 \
+            #   --storage-auto-increase \
+            #   --backup \
+            #   --backup-start-time=04:00 \
+            #   --require-ssl
+            gcloud sql users set-password postgres --instance=sheffessions-postgresql --password=${POSTGRESQL_PASSWORD_PRODUCTION}
+          else
+            echo "Instance sheffessions-staging-postgresql already exists."
+            echo "Skipping creation."
+            echo "Updating password to POSTGRESQL_PASSWORD_STAGING"
+            gcloud sql users set-password postgres --instance=sheffessions-postgresql --password=${POSTGRESQL_PASSWORD_PRODUCTION}
+          fi
+
       - name: 'Construct POSTGRESQL_URL and Run sheffessions_api'
         working-directory: ./backend/sheffessions_api
         run: |
