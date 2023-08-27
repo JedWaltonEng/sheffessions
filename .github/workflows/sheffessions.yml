@@ -106,7 +106,7 @@ jobs:
       - name: 'Construct POSTGRESQL_URL and Run sheffessions_api'
         working-directory: ./backend/sheffessions_api
         run: |
-          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.6.1/cloud-sql-proxy.linux.amd64
+          wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
           chmod +x cloud_sql_proxy
           ./cloud_sql_proxy -instances=sheffessions:europe-west2:sheffessions-postgresql=tcp:5432 &
 
