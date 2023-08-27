@@ -104,7 +104,7 @@ jobs:
             echo "Instance sheffessions-staging-postgresql already exists."
             echo "Skipping creation." 
             echo "Updating password to POSTGRESQL_PASSWORD_STAGING"
-            gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
+           gcloud sql users set-password postgres --instance=sheffessions-staging-postgresql --password=${POSTGRESQL_PASSWORD_STAGING}
           fi
 
       - name: Setup Go
@@ -136,7 +136,7 @@ jobs:
       - name: 'Construct POSTGRESQL_URL and Run sheffessions_api'
         working-directory: ./backend/sheffessions_api
         run: |
-          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.6.1/cloud-sql-proxy.linux.amd64
+          wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
           chmod +x cloud_sql_proxy
           ./cloud_sql_proxy -instances=sheffessions-staging:europe-west2:sheffessions-staging-postgresql=tcp:5432 &
 
