@@ -6,10 +6,10 @@ import (
 )
 
 type postGenerationServiceImpl struct {
-	db store.Storer
+	db store.StorerConfessions
 }
 
-func NewPostGenerationService(db store.Storer) PostGenerationService {
+func NewPostGenerationService(db store.StorerConfessions) PostGenerationService {
 	return &postGenerationServiceImpl{db: db}
 }
 
