@@ -12,7 +12,7 @@ type PostGenerationHandler struct {
 	service services.PostGenerationService
 }
 
-func NewPostGenerationHandler(db store.Storer) *PostGenerationHandler {
+func NewPostGenerationHandler(db store.StorerConfessions) *PostGenerationHandler {
 	service := services.NewPostGenerationService(db)
 	return &PostGenerationHandler{service: service}
 }

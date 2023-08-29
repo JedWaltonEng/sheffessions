@@ -3,10 +3,10 @@ package services
 import "sheffessions/api/store"
 
 type service struct {
-	store store.Storer
+	store store.StorerConfessions
 }
 
-func NewConfessionService(s store.Storer) ConfessionService {
+func NewConfessionService(s store.StorerConfessions) ConfessionService {
 	return &service{s}
 }
 

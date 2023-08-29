@@ -68,8 +68,8 @@ func SetupRoutes(config *ServerConfig, mux *http.ServeMux) *http.ServeMux {
 	postGenHandler := handlers.NewPostGenerationHandler(config.DBStore)
 	postGenChainedHandler := middleware.Chain(
 		postGenHandler.ServeHTTP,
-		middleware.TokenAuthMiddleware(config.SecretToken),
 		middleware.Logging,
+		middleware.TokenAuthMiddleware(config.SecretToken),
 	)
 
 	// Register the endpoint with the chained handler
