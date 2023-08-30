@@ -26,7 +26,7 @@ func HandleConfessions(s services.ConfessionService) http.HandlerFunc {
 				return
 			}
 
-			affected, err := s.CreateConfession(confession.Content, confession.SourceOfConfession)
+			affected, err := s.SaveConfession(confession.Content, confession.SourceOfConfession)
 			if err != nil {
 				log.Println("Failed to insert confession to database:", err)
 				http.Error(w, "Failed to save confession", http.StatusInternalServerError)

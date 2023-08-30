@@ -10,14 +10,14 @@ func NewConfessionService(s store.StorerConfessions) ConfessionService {
 	return &service{s}
 }
 
-func (s *service) CreateConfession(content, source string) (int64, error) {
+func (s *service) SaveConfession(content, source string) (int64, error) {
 	return s.store.SaveConfession(content, source)
 }
 
-func (s *service) GetRandomConfession() (*store.Confession, error) {
+func (s *service) RandomConfession() (*store.Confession, error) {
 	return s.store.RandomConfession()
 }
 
-func (s *service) RemoveConfession(id int64) error {
+func (s *service) DeleteConfessionByID(id int64) error {
 	return s.store.DeleteConfessionByID(id)
 }

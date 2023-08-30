@@ -37,7 +37,7 @@ func NewServerConfig() *ServerConfig {
 		"https://sheffessions-fe-staging-5pu6yezepq-ew.a.run.app",
 	}
 
-	dbStore := store.InitDB()
+	dbStore := store.ConnectToPostgres()
 
 	return &ServerConfig{
 		SecretToken:    secretToken,
@@ -61,20 +61,19 @@ func main() {
 }
 
 func SetupRoutes(config *ServerConfig, mux *http.ServeMux) *http.ServeMux {
-	confessionsService := services.NewConfessionService(config.DBStore)
-	handleConfessionsFunc := handlers.HandleConfessions(confessionsService)
-	confessionsHandler := middleware.Chain(handleConfessionsFunc, middleware.CORSMiddleware(config.AllowedOrigins), middleware.Logging)
+	// Confessions Route
+	mux.HandleFunc("/confessions", middleware.Chain(
+		handlers.HandleConfessions(services.NewConfessionService(config.DBStore)),
+		middleware.CORSMiddleware(config.AllowedOrigins),
+		middleware.Logging,
+	))
 
-	postGenHandler := handlers.NewPostGenerationHandler(config.DBStore)
-	postGenChainedHandler := middleware.Chain(
-		postGenHandler.ServeHTTP,
+	// Post Generation Route
+	mux.HandleFunc("/cron-job", middleware.Chain(
+		handlers.HandlePostGeneration(services.NewPostService(config.DBStore, config.DBStore)),
 		middleware.Logging,
 		middleware.TokenAuthMiddleware(config.SecretToken),
-	)
-
-	// Register the endpoint with the chained handler
-	mux.HandleFunc("/confessions", confessionsHandler)
-	mux.HandleFunc("/cron-job", postGenChainedHandler)
+	))
 
 	return mux
 }

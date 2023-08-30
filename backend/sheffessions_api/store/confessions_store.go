@@ -1,14 +1,28 @@
 package store
 
-func (store *DBStore) SaveConfession(content, source string) (int64, error) {
-	result, err := store.DB.Exec("INSERT INTO confessions (confession_text, source_of_confession) VALUES ($1, $2)", content, source)
+type StorerConfessions interface {
+	SaveConfession(content, source string) (int64, error)
+	RandomConfession() (*Confession, error)
+	DeleteConfessionByID(id int64) error
+}
+
+type Confession struct {
+	ID                 int64
+	ConfessionText     string
+	DateOfConfession   string
+	SourceOfConfession string
+}
+
+func (store *Store) SaveConfession(content, source string) (int64, error) {
+
+	result, err := store.db.Exec("INSERT INTO confessions (confession_text, source_of_confession) VALUES ($1, $2)", content, source)
 	if err != nil {
 		return 0, err
 	}
 	return result.RowsAffected()
 }
 
-func (store *DBStore) RandomConfession() (*Confession, error) {
+func (store *Store) RandomConfession() (*Confession, error) {
 	query := `
         SELECT * FROM (
             SELECT * 
@@ -22,7 +36,7 @@ func (store *DBStore) RandomConfession() (*Confession, error) {
     `
 
 	confession := &Confession{}
-	err := store.DB.QueryRow(query).Scan(&confession.ID, &confession.ConfessionText, &confession.DateOfConfession, &confession.SourceOfConfession)
+	err := store.db.QueryRow(query).Scan(&confession.ID, &confession.ConfessionText, &confession.DateOfConfession, &confession.SourceOfConfession)
 
 	if err != nil {
 		return nil, err
@@ -30,7 +44,7 @@ func (store *DBStore) RandomConfession() (*Confession, error) {
 	return confession, nil
 }
 
-func (store *DBStore) DeleteConfessionByID(id int64) error {
-	_, err := store.DB.Exec("DELETE FROM confessions WHERE id = $1", id)
+func (store *Store) DeleteConfessionByID(id int64) error {
+	_, err := store.db.Exec("DELETE FROM confessions WHERE id = $1", id)
 	return err
 }
