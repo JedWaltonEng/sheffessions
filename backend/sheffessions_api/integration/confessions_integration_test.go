@@ -16,7 +16,7 @@ import (
 func TestHandleConfessionsIntegration(t *testing.T) {
 	// Setup
 	// Assuming you have some utility functions to start your test database
-	confessionStore := store.InitDB()
+	confessionStore := store.ConnectToPostgres()
 	// defer teardownTestDatabase(db)
 
 	// Create instances of store, service, and handler

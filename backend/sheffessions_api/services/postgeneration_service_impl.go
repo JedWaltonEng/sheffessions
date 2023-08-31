@@ -19,9 +19,7 @@ func (p *postService) GeneratePost() (*store.Confession, error) {
 	if err != nil {
 		return nil, errors.New("Error getting random confession: " + err.Error())
 	}
-
 	// Utilize methods from the store here if required, like checking if posted.
-
 	return confession, nil
 }
 

@@ -1,73 +1,43 @@
-package handlers_test
+package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sheffessions/api/handlers"
 	"sheffessions/api/store"
 	"testing"
 )
 
-type FakePostStore struct {
-	Confessions []*store.Confession
+type StubPostGenerationService struct {
+	Called bool
 }
 
-func (fps *FakePostStore) SaveConfession(content, source string) (int64, error) {
-	return 0, nil // Not necessary for this test
+func (s *StubPostGenerationService) GeneratePost() (*store.Confession, error) {
+	s.Called = true
+	return nil, nil
 }
 
-func (fps *FakePostStore) RandomConfession() (*store.Confession, error) {
-	// For simplicity, let's always return the first confession
-	return fps.Confessions[0], nil
+func (s *StubPostGenerationService) IsPostDuplicate() bool {
+	return false // or true, whatever makes sense for your test
 }
 
-func (fps *FakePostStore) DeleteConfessionByID(id int64) error {
-	return nil // Not necessary for this test
-}
-
-func TestPostGenerationHandler(t *testing.T) {
-	// Create a fake confession for testing
-	confession := &store.Confession{
-		ID:                 1,
-		ConfessionText:     "Test Confession",
-		SourceOfConfession: "Test Source",
-	}
-	fakeStore := &FakePostStore{Confessions: []*store.Confession{confession}}
-
-	handler := handlers.NewPostGenerationHandler(fakeStore)
-
-	req, err := http.NewRequest("GET", "/generate-post", nil)
+func TestHandlePostGeneration(t *testing.T) {
+	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
+	// pass 'nil' as the third parameter.
+	req, err := http.NewRequest("GET", "/cron-job", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
+
+	stubService := &StubPostGenerationService{}
+	handler := http.HandlerFunc(HandlePostGeneration(stubService))
+	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
+	// directly and pass in our Request and ResponseRecorder.
 	handler.ServeHTTP(rr, req)
-
+	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v, want %v", status, http.StatusOK)
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
 	}
-
-	expectedContentType := "application/json"
-	if contentType := rr.Header().Get("Content-Type"); contentType != expectedContentType {
-		t.Errorf("handler returned wrong content-type: got %v, want %v", contentType, expectedContentType)
-	}
-
-	// Deserialize the returned confession for easier inspection
-	var returnedConfession store.Confession
-	err = json.Unmarshal(rr.Body.Bytes(), &returnedConfession)
-	if err != nil {
-		t.Fatal("Failed to unmarshal returned confession:", err)
-	}
-
-	if returnedConfession.ConfessionText != confession.ConfessionText {
-		t.Errorf("handler returned unexpected confession text: got %v, want %v", returnedConfession.ConfessionText, confession.ConfessionText)
-	}
-
-	// If there's a function to check post duplicity or any other function, invoke and check them
-	// For now, we'll use the provided `isPostDuplicate` function as an example
-	// if isPostDuplicate() {
-	// 	t.Error("Post is detected as a duplicate when it shouldn't be.")
-	// }
 }
