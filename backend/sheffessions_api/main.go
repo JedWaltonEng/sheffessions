@@ -70,7 +70,7 @@ func SetupRoutes(config *ServerConfig, mux *http.ServeMux) *http.ServeMux {
 
 	// Post Generation Route
 	mux.HandleFunc("/cron-job", middleware.Chain(
-		handlers.HandlePostGeneration(services.NewPostService(config.DBStore, config.DBStore)),
+		handlers.HandlePostGeneration(services.NewPostGenerationService(config.DBStore, config.DBStore)),
 		middleware.Logging,
 		middleware.TokenAuthMiddleware(config.SecretToken),
 	))

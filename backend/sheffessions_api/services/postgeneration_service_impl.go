@@ -10,7 +10,7 @@ type postService struct {
 	postedStore     store.StorerPostedConfessions
 }
 
-func NewPostService(confessionStore store.StorerConfessions, postedConfessionStore store.StorerPostedConfessions) *postService {
+func NewPostGenerationService(confessionStore store.StorerConfessions, postedConfessionStore store.StorerPostedConfessions) *postService {
 	return &postService{confessionStore, postedConfessionStore}
 }
 
