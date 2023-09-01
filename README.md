@@ -5,7 +5,8 @@
 
 - Start dev environment.
     - `$ cd docker && docker compose up`
-
+    - if live reloading go doesn't work try:
+        - `$ docker compose build --no-cache`
 - Migrations
     - `$ go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest`
     - `$ export POSTGRESQL_URL=postgres://postgres:mysecretpassword@localhost:5432/devdb?sslmode=disable`
@@ -24,3 +25,12 @@ Todo:
 - Post health check with OpenAI.
 - Generate Image from chosen posts.
 - Schedule image posts & Upload image to instagram via graphql
+
+
+feature/postgenerator
+------------------
+- cover current rig in integration/unit tests.
+- saturate a test database table with 100 test confessions.
+- simple mechanism to randomly select confessions.
+- pass randomly selected confession and generate image for instagram.
+- 
